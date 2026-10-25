@@ -1,0 +1,51 @@
+/* 배치 편집 모드 (F12) — PC 왼쪽 패널. 설정 패널(오른쪽)과 겹치지 않게 */
+.edit-panel { position: fixed; left: 12px; top: 12px; bottom: 12px; width: 300px; display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 12px;
+  background: var(--panel); border: 1px solid var(--line); color: var(--ink); font-size: 12.5px; overflow-y: auto; z-index: 20; box-sizing: border-box; }
+.edit-panel > * { flex-shrink: 0; }
+.edit-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 14px; }
+.edit-badge { font-size: 11.5px; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.edit-badge.clean { background: rgba(110, 200, 140, 0.2); color: #a8e6bd; }
+.edit-badge.dirty { background: rgba(240, 163, 90, 0.25); color: #ffd2a6; }
+.edit-badge.test { background: rgba(120, 170, 255, 0.25); color: #c9dcff; }
+.edit-msg { min-height: 0; font-size: 12px; line-height: 1.45; color: var(--muted); }
+.edit-msg.ok { color: #a8e6bd; } .edit-msg.err { color: #ff9a9a; } .edit-msg.info { color: #d6cbc2; }
+.edit-main { display: flex; flex-direction: column; gap: 8px; }
+.edit-main[hidden], .edit-test[hidden] { display: none; }
+.edit-sec { display: flex; flex-direction: column; gap: 6px; }
+.edit-sec.scope { padding: 8px; border-radius: 8px; border: 1px solid var(--line); }
+.edit-h { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-weight: 600; font-size: 12px; color: var(--muted); }
+.edit-list { display: flex; flex-wrap: wrap; gap: 4px; }
+.edit-panel button { font: inherit; font-size: 12px; padding: 4px 9px; border-radius: 7px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.06); color: var(--ink); cursor: pointer; }
+.edit-panel button:hover:not(:disabled) { background: rgba(255, 255, 255, 0.12); }
+.edit-panel button:disabled { opacity: 0.45; cursor: default; }
+.edit-panel button.accent { background: var(--accent); color: #1d1208; border-color: transparent; font-weight: 600; }
+.edit-panel button.ghost { background: transparent; }
+.edit-panel button.small { padding: 1px 7px; font-size: 11px; }
+.edit-list button[aria-selected="true"] { background: var(--accent); color: #1d1208; border-color: transparent; }
+.edit-list button.err { border-color: #ff6b6b; } .edit-list button.warn { border-color: #ffc04d; }
+.edit-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.edit-num { display: flex; flex-direction: column; gap: 2px; font-size: 11px; color: var(--muted); }
+.edit-num input { width: 100%; box-sizing: border-box; font: inherit; font-size: 12.5px; padding: 3px 6px; border-radius: 6px; border: 1px solid var(--line); background: rgba(0, 0, 0, 0.25); color: var(--ink); }
+.edit-num input:disabled { opacity: 0.5; }
+.edit-num em { font-style: normal; font-size: 10.5px; color: #c9b8a8; }
+.edit-check .sum { font-weight: 600; } .edit-check .sum.ok { color: #a8e6bd; } .edit-check .sum.warn { color: #ffd27a; } .edit-check .sum.err { color: #ff9a9a; }
+.edit-check ul { margin: 4px 0 0; padding-left: 16px; display: flex; flex-direction: column; gap: 3px; }
+.edit-check li { cursor: pointer; } .edit-check li.err { color: #ffb0b0; } .edit-check li.warn { color: #ffe0a0; } .edit-check li.info { color: var(--muted); }
+.edit-check .at { color: var(--muted); font-size: 11px; }
+.edit-note, .edit-help { margin: 0; font-size: 11.5px; color: var(--muted); line-height: 1.45; }
+.edit-test p { margin: 0 0 8px; line-height: 1.5; }
+.edit-label { position: fixed; transform: translate(-50%, -110%); padding: 2px 9px; border-radius: 999px; background: rgba(240, 163, 90, 0.92); color: #1d1208; font-size: 12px; font-weight: 600; pointer-events: none; white-space: nowrap; z-index: 15; }
+body.ui-hidden .edit-panel, body.ui-hidden .edit-label { display: none; }
+/* 도구 막대 (위 가운데): Q W E R · 월드/로컬 · 스냅 · 바닥에 맞추기 · F · 기술 표시 */
+.edit-toolbar { position: fixed; left: 50%; top: 12px; transform: translateX(-30%); display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 5px 6px; border-radius: 10px;
+  background: var(--panel); border: 1px solid var(--line); z-index: 21; font-size: 12px; max-width: calc(100vw - 360px); }
+.edit-toolbar[hidden] { display: none; }
+.edit-toolbar button { font: inherit; font-size: 12px; padding: 3px 8px; border-radius: 7px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.06); color: var(--ink); cursor: pointer; white-space: nowrap; }
+.edit-toolbar button.on { background: var(--accent); color: #1d1208; border-color: transparent; font-weight: 600; }
+.edit-toolbar button:disabled { opacity: 0.45; cursor: default; }
+.edit-toolbar kbd { font: 600 10.5px ui-monospace, Consolas, monospace; padding: 0 4px; border-radius: 4px; background: rgba(0, 0, 0, 0.3); }
+.edit-toolbar .sep { width: 1px; align-self: stretch; background: var(--line); margin: 0 2px; }
+.edit-grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+.edit-help summary { cursor: pointer; color: var(--muted); }
+body.ui-hidden .edit-toolbar { display: none; }

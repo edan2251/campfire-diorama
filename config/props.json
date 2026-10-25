@@ -1,0 +1,241 @@
+{
+ "island": {
+  "source": "assets-src/tripo/20261023_user_props/02_floating_island.glb",
+  "tripo_job": "58235aa6",
+  "src_tris": 33943,
+  "removed_small_part_verts": 25,
+  "scale_xyz": [
+   0.061379,
+   0.051339,
+   0.056359
+  ],
+  "dims_H_blender_xyz": [
+   6.0,
+   5.0,
+   0.9873
+  ],
+  "dims_H_three_xyz": [
+   6.0,
+   0.9873,
+   5.0
+  ],
+  "walk_top_offset": -0.9615,
+  "top_height_spread_H": [
+   -0.0257,
+   0.0109
+  ],
+  "heightmap": {
+   "cells_on_island": 2335,
+   "min": -0.0448,
+   "max": 0.0225
+  },
+  "web_tris": 14000,
+  "web_glb": "web/assets/props/island.glb",
+  "web_bytes": 456812,
+  "web_tex": 1024,
+  "blend": "blender/work/props/island.blend"
+ },
+ "tent": {
+  "source": "assets-src/tripo/20261023_user_props/03_a_frame_tent.glb",
+  "tripo_job": "ae47a68c",
+  "src_tris": 43173,
+  "removed_small_part_verts": 605,
+  "entrance_local_before": "+Y",
+  "entrance_area_check": {
+   "1": 1171.8,
+   "-1": 1177.5
+  },
+  "scale_xyz": [
+   0.014775,
+   0.014775,
+   0.014775
+  ],
+  "dims_H_blender_xyz": [
+   1.2705,
+   1.4448,
+   1.25
+  ],
+  "dims_H_three_xyz": [
+   1.2705,
+   1.25,
+   1.4448
+  ],
+  "web_tris": 12000,
+  "web_glb": "web/assets/props/tent.glb",
+  "web_bytes": 442332,
+  "web_tex": 1024,
+  "blend": "blender/work/props/tent.blend"
+ },
+ "log": {
+  "source": "assets-src/tripo/20261023_user_props/04_resting_log.glb",
+  "tripo_job": "71ca724c",
+  "src_tris": 37006,
+  "removed_small_part_verts": 0,
+  "scale_xyz": [
+   0.020413,
+   0.011404,
+   0.013017
+  ],
+  "dims_H_blender_xyz": [
+   2.0,
+   0.38,
+   0.38
+  ],
+  "dims_H_three_xyz": [
+   2.0,
+   0.38,
+   0.38
+  ],
+  "web_tris": 7000,
+  "web_glb": "web/assets/props/log.glb",
+  "web_bytes": 227720,
+  "web_tex": 1024,
+  "blend": "blender/work/props/log.blend"
+ },
+ "firewood": {
+  "source": "assets-src/tripo/20261023_user_props/05_firewood_bundle.glb",
+  "tripo_job": "f0f0e9f9",
+  "src_tris": 35948,
+  "removed_small_part_verts": 0,
+  "scale_xyz": [
+   0.004296,
+   0.004296,
+   0.004296
+  ],
+  "dims_H_blender_xyz": [
+   0.42,
+   0.3627,
+   0.2822
+  ],
+  "dims_H_three_xyz": [
+   0.42,
+   0.2822,
+   0.3627
+  ],
+  "web_tris": 5000,
+  "web_glb": "web/assets/props/firewood.glb",
+  "web_bytes": 195488,
+  "web_tex": 512,
+  "blend": "blender/work/props/firewood.blend"
+ },
+ "stone_ring": {
+  "source": "assets-src/tripo/20261023_user_props/06_fire_stone_ring.glb",
+  "tripo_job": "4e61fa9b",
+  "src_tris": 37036,
+  "removed_small_part_verts": 0,
+  "scale_xyz": [
+   0.008778,
+   0.008778,
+   0.008778
+  ],
+  "dims_H_blender_xyz": [
+   0.86,
+   0.828,
+   0.1564
+  ],
+  "dims_H_three_xyz": [
+   0.86,
+   0.1564,
+   0.828
+  ],
+  "web_tris": 6998,
+  "web_glb": "web/assets/props/stone_ring.glb",
+  "web_bytes": 296840,
+  "web_tex": 1024,
+  "blend": "blender/work/props/stone_ring.blend"
+ },
+ "guitar_case": {
+  "source": "assets-src/tripo/20261023_user_props/08_closed_guitar_case.glb",
+  "tripo_job": "f67f9bc2",
+  "src_tris": 40360,
+  "removed_small_part_verts": 168,
+  "scale_xyz": [
+   0.006335,
+   0.006335,
+   0.006335
+  ],
+  "dims_H_blender_xyz": [
+   0.2713,
+   0.1031,
+   0.62
+  ],
+  "dims_H_three_xyz": [
+   0.2713,
+   0.62,
+   0.1031
+  ],
+  "web_tris": 5000,
+  "web_glb": "web/assets/props/guitar_case.glb",
+  "web_bytes": 239308,
+  "web_tex": 512,
+  "blend": "blender/work/props/guitar_case.blend"
+ },
+ "rock": {
+  "source": "assets-src/tripo/20261023_user_props/09_small_rock.glb",
+  "tripo_job": "e24c87c3",
+  "src_tris": 36242,
+  "removed_small_part_verts": 0,
+  "scale_xyz": [
+   0.010235,
+   0.010235,
+   0.010235
+  ],
+  "dims_H_blender_xyz": [
+   1.0,
+   0.9545,
+   0.6018
+  ],
+  "dims_H_three_xyz": [
+   1.0,
+   0.6018,
+   0.9545
+  ],
+  "web_tris": 2000,
+  "web_glb": "web/assets/props/rock.glb",
+  "web_bytes": 73256,
+  "web_tex": 512,
+  "blend": "blender/work/props/rock.blend"
+ },
+ "grass": {
+  "source": "assets-src/tripo/20261023_user_props/10_short_grass_clump.glb",
+  "tripo_job": "78bba4a8",
+  "src_tris": 38450,
+  "removed_small_part_verts": 0,
+  "scale_xyz": [
+   0.010208,
+   0.010208,
+   0.010208
+  ],
+  "dims_H_blender_xyz": [
+   1.0,
+   0.631,
+   0.769
+  ],
+  "dims_H_three_xyz": [
+   1.0,
+   0.769,
+   0.631
+  ],
+  "web_tris": 2500,
+  "web_glb": "web/assets/props/grass.glb",
+  "web_bytes": 120460,
+  "web_tex": 512,
+  "blend": "blender/work/props/grass.blend"
+ },
+ "guitar": {
+  "source": "assets-src/reuse/guitar_5d25aaa5/guitar_tripo_packed.blend (Tripo 5d25aaa5, 재사용)",
+  "src_tris": 284755,
+  "scale": 1.1,
+  "dims_H_three_xyz": [
+   0.2297,
+   0.5501,
+   0.0817
+  ],
+  "web_tris": 12000,
+  "web_glb": "web/assets/props/guitar.glb",
+  "web_bytes": 618228,
+  "web_tex": 1024,
+  "blend": "blender/work/props/guitar.blend",
+  "axes": "넥 = 위(+Y three), 앞판 = +Z three, 바닥 중심 원점"
+ }
+}

@@ -1,0 +1,6 @@
+{
+ "H": 1.0,
+ "walk_speed": 0.403,
+ "walk_clip_seconds": 2.333,
+ "source": "blender/scripts/export_character.py"
+}

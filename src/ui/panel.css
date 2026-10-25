@@ -1,0 +1,60 @@
+/* 설정 패널 (F10). PC: 오른쪽 위 접이식 / 모바일(< 700px): 아래 시트 */
+#ui { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
+#ui > * { pointer-events: auto; }
+.panel-toggle { position: absolute; right: 16px; top: 16px; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font-size: 19px; cursor: pointer; }
+.panel { position: absolute; right: 16px; top: 64px; width: 300px; max-height: calc(100vh - 88px); display: none; flex-direction: column; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); backdrop-filter: blur(6px); box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35); overflow: hidden; }
+#ui.open .panel { display: flex; }
+.sheet-handle { display: none; }
+.tabs { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--line); }
+.tabs button { padding: 9px 4px; background: none; border: 0; color: var(--muted); font: inherit; cursor: pointer; border-bottom: 2px solid transparent; }
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.panel-body { padding: 10px 12px; overflow-y: auto; display: grid; gap: 8px; }
+.panel-foot { padding: 8px 12px 12px; border-top: 1px solid var(--line); display: grid; gap: 6px; }
+.row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; }
+.row.col { grid-template-columns: 1fr; gap: 4px; }
+.row.range { grid-template-columns: 1fr; grid-template-areas: "lab out" "inp inp"; }
+.row.range .lab { grid-area: lab; }
+.row.range output { grid-area: out; justify-self: end; color: var(--muted); font-variant-numeric: tabular-nums; }
+.row.range input { grid-area: inp; width: 100%; accent-color: var(--accent); }
+.row.range { grid-template-columns: 1fr auto; }
+.lab { color: var(--ink); font-size: 13px; }
+.lab.small { color: var(--muted); font-size: 12px; }
+.panel button { font: inherit; font-size: 12.5px; color: var(--ink); background: rgba(255, 255, 255, 0.06); border: 1px solid var(--line); border-radius: 7px; padding: 5px 9px; cursor: pointer; }
+.panel button:disabled { opacity: 0.4; cursor: default; }
+.panel button.ghost { background: none; }
+.panel button.accent { border-color: var(--accent); color: var(--accent); }
+.panel button.danger { color: #ff9b8f; }
+.tog[aria-checked="true"] { border-color: var(--accent); color: var(--accent); }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; }
+.seg button[aria-checked="true"] { border-color: var(--accent); color: var(--accent); background: rgba(240, 163, 90, 0.1); }
+.status { color: var(--muted); font-size: 12px; min-height: 1.2em; }
+.note { margin: 0; color: var(--muted); font-size: 11.5px; line-height: 1.45; }
+.adv summary { cursor: pointer; color: var(--muted); padding: 4px 0; }
+.adv[open] { display: grid; gap: 8px; }
+.slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.slot { display: grid; gap: 3px; }
+.actions, .presets, .resets { display: flex; flex-wrap: wrap; gap: 5px; }
+body.ui-hidden #ui, body.ui-hidden #restLabel, body.ui-hidden #toast { display: none !important; }
+#uiHint { position: fixed; right: 16px; bottom: 16px; padding: 5px 10px; border-radius: 999px; background: var(--panel); color: var(--muted); font-size: 12px; display: none; }
+body.ui-hidden #uiHint { display: block; }
+
+@media (max-width: 700px) {
+  .panel-toggle { display: none; }
+  .panel { display: flex; left: 0; right: 0; top: auto; bottom: 0; width: auto; max-height: none; border-radius: 14px 14px 0 0; transition: height 0.2s ease; }
+  #ui[data-sheet="collapsed"] .panel { height: 92px; }
+  #ui[data-sheet="half"] .panel { height: 50vh; }
+  #ui[data-sheet="full"] .panel { height: 85vh; }
+  .sheet-handle { display: block; height: 22px; background: none !important; border: 0 !important; padding: 0 !important; }
+  .sheet-handle span { display: block; width: 40px; height: 4px; margin: 0 auto; border-radius: 2px; background: rgba(255, 255, 255, 0.3); }
+  #ui[data-sheet="collapsed"] .panel-body, #ui[data-sheet="collapsed"] .panel-foot { display: none; }
+  .panel { overflow-y: auto; overscroll-behavior: contain; }
+  .panel-body { overflow: visible; }
+  .tabs { position: sticky; top: 0; background: var(--panel); z-index: 1; }
+}
+
+/* 높이가 낮은 화면(모바일 가로 등): 프리셋·초기화 줄이 본문을 밀어내지 않게 패널 전체를 스크롤 (CP-06) */
+@media (max-height: 520px) and (min-width: 701px) {
+  .panel { overflow-y: auto; overscroll-behavior: contain; }
+  .panel-body { overflow: visible; }
+  .tabs { position: sticky; top: 0; background: var(--panel); z-index: 1; }
+}

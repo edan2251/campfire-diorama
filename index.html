@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>별밤 캠프파이어 디오라마</title>
+<meta name="description" content="별이 있는 어두운 공간의 부유 섬에서 SD 캐릭터가 모닥불 곁 통나무에 기대 쉬는 3D 디오라마">
+<style>
+  :root { --bg: #070a17; --ink: #f3e9df; --muted: #b8aca4; --panel: rgba(18, 20, 34, 0.86); --line: rgba(255, 255, 255, 0.12); --accent: #f0a35a; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 14px/1.5 "Malgun Gothic", system-ui, sans-serif; overflow: hidden; }
+  #stage { position: fixed; inset: 0; }
+  #stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+  #boot { position: fixed; left: 16px; bottom: 16px; padding: 8px 12px; border-radius: 8px; background: var(--panel); color: var(--muted); font-size: 12.5px; }
+  #boot.err { color: #ff8f8f; }
+  #toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); padding: 7px 14px; border-radius: 999px; background: var(--panel); color: var(--ink); font-size: 13px; pointer-events: none; }
+  #restLabel { position: fixed; transform: translate(-50%, -100%); padding: 3px 10px; border-radius: 999px; background: rgba(240, 163, 90, 0.92); color: #1d1208; font-size: 12.5px; font-weight: 600; pointer-events: none; white-space: nowrap; }
+  #debug { position: fixed; left: 12px; top: 12px; padding: 6px 10px; border-radius: 8px; background: var(--panel); color: var(--muted); font: 12px/1.4 ui-monospace, Consolas, monospace; pointer-events: none; }
+  #assetWarn { position: fixed; left: 50%; top: 12px; transform: translateX(-50%); max-width: min(92vw, 640px); padding: 7px 14px; border-radius: 10px; background: rgba(120, 30, 30, 0.9); color: #ffe6e6; font-size: 13px; z-index: 30; }
+</style>
+<link rel="stylesheet" href="src/ui/panel.css">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div id="stage"></div>
+<div id="restLabel" hidden>쉬기</div>
+<div id="toast" role="status" hidden></div>
+<div id="debug" hidden></div>
+<div id="ui"></div>
+<div id="editRoot"></div>
+<div id="assetWarn" role="alert" hidden></div>
+<button id="uiHint" type="button">UI 보이기 (Esc)</button>
+<div id="boot" role="status">장면을 준비하는 중…</div>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

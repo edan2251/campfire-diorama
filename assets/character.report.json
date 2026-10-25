@@ -1,0 +1,95 @@
+{
+ "file": "web/assets/character.glb",
+ "blend": "blender/work/character_camping.blend",
+ "bytes": 4841360,
+ "textures": {
+  "base": [
+   2048,
+   2048
+  ],
+  "rm": [
+   1024,
+   1024
+  ],
+  "normal": [
+   2048,
+   2048
+  ]
+ },
+ "source": "blender/work/ground_draft.blend",
+ "clips_map": {
+  "Idle_Stand": "tripo_look_around",
+  "Walk": "Walk",
+  "SitDown_Ground": "SitDown_Ground",
+  "Idle_LeanLog": "Idle_LeanLog",
+  "StandUp_Ground": "StandUp_Ground"
+ },
+ "walk_bone_check": {
+  "mixamorig:Hips": {
+   "rot_diff_deg": 0.0,
+   "len_ratio": 1.0
+  },
+  "mixamorig:Spine": {
+   "rot_diff_deg": 0.0,
+   "len_ratio": 1.0
+  },
+  "mixamorig:LeftUpLeg": {
+   "rot_diff_deg": 0.0,
+   "len_ratio": 1.0
+  },
+  "mixamorig:LeftLeg": {
+   "rot_diff_deg": 0.0,
+   "len_ratio": 1.0
+  },
+  "mixamorig:RightArm": {
+   "rot_diff_deg": 0.0,
+   "len_ratio": 1.0
+  },
+  "mixamorig:Head": {
+   "rot_diff_deg": 0.0,
+   "len_ratio": 1.0
+  }
+ },
+ "walk": {
+  "frames": 57,
+  "seconds": 2.333,
+  "hips_y_range": 0.0,
+  "hips_z_range": 0.0122,
+  "Left_contact_frames": 12,
+  "Right_contact_frames": 6,
+  "stance_speeds": [
+   0.411,
+   0.395
+  ],
+  "walk_speed_H_per_s": 0.403
+ },
+ "actions": {
+  "Idle_LeanLog": [
+   1.0,
+   192.0
+  ],
+  "Idle_Stand": [
+   1.0,
+   375.0
+  ],
+  "SitDown_Ground": [
+   1.0,
+   73.0
+  ],
+  "StandUp_Ground": [
+   1.0,
+   77.0
+  ],
+  "Walk": [
+   1.0,
+   57.0
+  ]
+ },
+ "idle_lean_hips_err_mm_at_H150mm": 0.0,
+ "armature_world": [
+  0.0,
+  0.0,
+  0.0
+ ],
+ "triangles": 38863
+}

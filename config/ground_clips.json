@@ -1,0 +1,194 @@
+{
+ "fps": 24,
+ "clips": {
+  "SitDown_Ground": {
+   "frames": 73,
+   "seconds": 3.0
+  },
+  "StandUp_Ground": {
+   "frames": 77,
+   "seconds": 3.167
+  },
+  "Idle_LeanLog": {
+   "frames": 192,
+   "seconds": 7.958
+  }
+ },
+ "G": {
+  "hip_y": 0.1193,
+  "hip_z": 0.0619,
+  "lean": 16.0,
+  "ankle_z": 0.0628
+ },
+ "G_measure": {
+  "bottom_p1": -0.004,
+  "back_gap": -0.004,
+  "head_hat_gap": 0.037,
+  "arm_gap": 0.0151,
+  "leg_gap": 0.1064,
+  "ground_min_all": -0.0077,
+  "hand_min_z": 0.0831,
+  "feet_front_y": -0.1556,
+  "feet_min_z": -0.002
+ },
+ "key_checks": {
+  "sit_K0": {
+   "t": 0.0,
+   "bottom_p1": -0.0039,
+   "back_gap": 0.1393,
+   "head_hat_gap": 0.34,
+   "arm_gap": 0.1674,
+   "ground_min_all": -0.0039,
+   "hand_min_z": 0.1531
+  },
+  "sit_K1": {
+   "t": 0.3,
+   "bottom_p1": 0.1101,
+   "back_gap": 0.0736,
+   "head_hat_gap": 0.1309,
+   "arm_gap": 0.2228,
+   "ground_min_all": -0.0031,
+   "hand_min_z": 0.1316
+  },
+  "sit_K2": {
+   "t": 0.55,
+   "bottom_p1": 0.0617,
+   "back_gap": 0.0452,
+   "head_hat_gap": 0.029,
+   "arm_gap": 0.0762,
+   "ground_min_all": -0.0049,
+   "hand_min_z": 0.0796
+  },
+  "sit_K3": {
+   "t": 0.74,
+   "bottom_p1": 0.0089,
+   "back_gap": 0.05,
+   "head_hat_gap": 0.0385,
+   "arm_gap": 0.0656,
+   "ground_min_all": -0.0116,
+   "hand_min_z": 0.0085
+  },
+  "sit_K4": {
+   "t": 1.0,
+   "bottom_p1": -0.004,
+   "back_gap": -0.004,
+   "head_hat_gap": 0.037,
+   "arm_gap": 0.0151,
+   "ground_min_all": -0.0077,
+   "hand_min_z": 0.0831
+  },
+  "stand_K0": {
+   "t": 0.0,
+   "bottom_p1": -0.004,
+   "back_gap": -0.004,
+   "head_hat_gap": 0.037,
+   "arm_gap": 0.0151,
+   "ground_min_all": -0.0077,
+   "hand_min_z": 0.0831
+  },
+  "stand_K1": {
+   "t": 0.26,
+   "bottom_p1": 0.0056,
+   "back_gap": 0.0288,
+   "head_hat_gap": 0.0615,
+   "arm_gap": 0.0536,
+   "ground_min_all": -0.012,
+   "hand_min_z": 0.0095
+  },
+  "stand_K2": {
+   "t": 0.5,
+   "bottom_p1": 0.0496,
+   "back_gap": 0.0717,
+   "head_hat_gap": 0.0626,
+   "arm_gap": 0.1407,
+   "ground_min_all": -0.003,
+   "hand_min_z": 0.0513
+  },
+  "stand_K3": {
+   "t": 0.72,
+   "bottom_p1": 0.0959,
+   "back_gap": 0.0655,
+   "head_hat_gap": 0.1046,
+   "arm_gap": 0.2056,
+   "ground_min_all": -0.0029,
+   "hand_min_z": 0.1028
+  },
+  "stand_K4": {
+   "t": 1.0,
+   "bottom_p1": -0.0039,
+   "back_gap": 0.1393,
+   "head_hat_gap": 0.34,
+   "arm_gap": 0.1674,
+   "ground_min_all": -0.0039,
+   "hand_min_z": 0.1531
+  }
+ },
+ "frame_scan": {
+  "SitDown_Ground": {
+   "head_hat_gap": {
+    "min": 0.0184,
+    "frame": 45
+   },
+   "back_gap": {
+    "min": -0.004,
+    "frame": 73
+   },
+   "arm_gap": {
+    "min": 0.0151,
+    "frame": 73
+   },
+   "leg_gap": {
+    "min": 0.1037,
+    "frame": 65
+   },
+   "ground_min_all": {
+    "min": -0.0117,
+    "frame": 55
+   }
+  },
+  "StandUp_Ground": {
+   "head_hat_gap": {
+    "min": 0.037,
+    "frame": 1
+   },
+   "back_gap": {
+    "min": -0.004,
+    "frame": 1
+   },
+   "arm_gap": {
+    "min": 0.0151,
+    "frame": 1
+   },
+   "leg_gap": {
+    "min": 0.0895,
+    "frame": 15
+   },
+   "ground_min_all": {
+    "min": -0.012,
+    "frame": 21
+   }
+  },
+  "Idle_LeanLog": {
+   "head_hat_gap": {
+    "min": 0.03,
+    "frame": 119
+   },
+   "back_gap": {
+    "min": -0.0045,
+    "frame": 25
+   },
+   "arm_gap": {
+    "min": 0.014,
+    "frame": 121
+   },
+   "leg_gap": {
+    "min": 0.1064,
+    "frame": 169
+   },
+   "ground_min_all": {
+    "min": -0.0077,
+    "frame": 1
+   }
+  }
+ }
+}
