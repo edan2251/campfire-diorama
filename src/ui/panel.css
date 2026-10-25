@@ -35,8 +35,42 @@
 .slot { display: grid; gap: 3px; }
 .actions, .presets, .resets { display: flex; flex-wrap: wrap; gap: 5px; }
 body.ui-hidden #ui, body.ui-hidden #restLabel, body.ui-hidden #toast { display: none !important; }
-#uiHint { position: fixed; right: 16px; bottom: 16px; padding: 5px 10px; border-radius: 999px; background: var(--panel); color: var(--muted); font-size: 12px; display: none; }
+#uiHint { position: fixed; right: 16px; bottom: 16px; min-height: 40px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; display: none; z-index: 20; }
 body.ui-hidden #uiHint { display: block; }
+
+/* 키보드 포커스 표시 (PUB-02) — 마우스 클릭에는 표시 안 함 */
+#ui button:focus-visible, #ui summary:focus-visible, #ui input:focus-visible, #uiHint:focus-visible, .help h2:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.help h2:focus:not(:focus-visible) { outline: none; }
+
+/* 오른쪽 위 바로가기: 도움말 · 촬영 (설정 ⚙ 왼쪽) */
+.hud { position: absolute; right: 64px; top: 16px; display: flex; gap: 8px; }
+.hud-btn { height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font: inherit; font-size: 13.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.hud-btn.round { width: 40px; padding: 0; justify-content: center; font-size: 17px; font-weight: 600; }
+.hud-btn[aria-expanded="true"] { border-color: var(--accent); color: var(--accent); }
+.hud-btn .ico { font-size: 15px; }
+.hud-btn[hidden] { display: none; }
+
+/* 조작 안내 카드: 장면을 크게 가리지 않게 왼쪽 아래 작게 */
+.help { position: absolute; left: 16px; bottom: 16px; width: min(320px, calc(100vw - 32px)); box-sizing: border-box; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); backdrop-filter: blur(6px); box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35); font-size: 13px; }
+.help[hidden] { display: none; }
+.help h2 { margin: 0 0 6px; font-size: 14px; font-weight: 600; color: var(--accent); }
+.help ul { margin: 0; padding-left: 18px; }
+.help-quick li { margin: 2px 0; }
+.help-more { margin-top: 6px; color: var(--muted); font-size: 12.5px; }
+.help-more summary { cursor: pointer; padding: 3px 0; }
+.help-more li { margin: 2px 0; }
+.help-credit { margin: 8px 0 0; font-size: 11.5px; color: var(--muted); opacity: 0.85; }
+.help-close { margin-top: 8px; width: 100%; min-height: 36px; font: inherit; font-size: 13px; color: #1d1208; background: var(--accent); border: 0; border-radius: 8px; cursor: pointer; }
+
+/* 촬영 막대: 촬영 모드에서만, 화면 위 가운데 */
+.photobar { position: absolute; left: 50%; top: 16px; transform: translateX(-50%); display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px; max-width: calc(100vw - 260px); padding: 6px 8px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); backdrop-filter: blur(6px); }
+.photobar[hidden] { display: none; }
+.photobar-title { padding: 0 6px; color: var(--accent); font-size: 12.5px; font-weight: 600; }
+.photobar button { min-height: 34px; font: inherit; font-size: 13px; color: var(--ink); background: rgba(255, 255, 255, 0.06); border: 1px solid var(--line); border-radius: 8px; padding: 4px 11px; cursor: pointer; }
+.photobar button.accent { border-color: var(--accent); color: #1d1208; background: var(--accent); font-weight: 600; }
+.photobar button.ghost { background: none; }
+.photobar button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.photobar button:disabled { opacity: 0.5; cursor: progress; }
 
 @media (max-width: 700px) {
   .panel-toggle { display: none; }
@@ -50,6 +84,13 @@ body.ui-hidden #uiHint { display: block; }
   .panel { overflow-y: auto; overscroll-behavior: contain; }
   .panel-body { overflow: visible; }
   .tabs { position: sticky; top: 0; background: var(--panel); z-index: 1; }
+  .tabs button { min-height: 40px; }
+  .panel button { min-height: 36px; }
+  .hud { right: 12px; top: 12px; }
+  .help { left: 12px; right: 12px; top: 64px; bottom: auto; width: auto; }
+  .photobar { left: 12px; right: 12px; top: 62px; transform: none; max-width: none; }
+  .photobar button { min-height: 40px; }
+  .photobar-title { width: 100%; text-align: center; }
 }
 
 /* 높이가 낮은 화면(모바일 가로 등): 프리셋·초기화 줄이 본문을 밀어내지 않게 패널 전체를 스크롤 (CP-06) */

@@ -19,15 +19,18 @@ import { createSky } from './fx/sky.js';
 import { createRain, markOccluder } from './fx/rain.js';
 import { createPost, H_MM } from './render/post.js';
 import { buildTempScene } from './scene/temp_scene.js';
-import { loadProps, buildWorld } from './scene/world.js';
+import { loadProps, buildWorld, PROP_NAMES } from './scene/world.js';
 import { createTerrain } from './logic/terrain.js';
 import { loadCharacter, CHAR_LOOK } from './app/character.js';
 import { createCameraRig } from './app/camera_rig.js';
 import { createPanel } from './ui/panel.js';
+import { createHud } from './ui/hud.js';
 
 const $ = (id) => document.getElementById(id);
 const stage = $('stage');
-const bootEl = $('boot');
+// 로딩·실패 화면 (index.html의 __boot, PUB-03): 실제 단계만 표시, 첫 프레임을 그린 뒤 닫음. 원문 오류는 콘솔에만
+const boot = window.__boot || { step() {}, fail(k, e) { console.error(e); }, done() {} };
+const bootError = (kind, message, cause) => Object.assign(new Error(message), { kind, cause });
 const Q = new URLSearchParams(location.search);
 const DEBUG = Q.has('debug');
 const EDIT = Q.has('edit');
@@ -36,9 +39,19 @@ const TIME_SCALE = Math.min(8, Math.max(0.1, +(Q.get('timescale') || 1)));   // 
 const toast = (() => { let t = 0; return (text, ms = 1800) => { const e = $('toast'); e.textContent = text; e.hidden = false; clearTimeout(t); t = setTimeout(() => { e.hidden = true; }, ms); }; })();
 const QNAME = { high: '높음', medium: '중간', low: '낮음' };
 const RES_SCALE = { high: 1, medium: 0.85, low: 0.7 };
-const getJSON = async (url) => { const r = await fetch(url, { cache: 'no-store' }); if (!r.ok) throw new Error(`${url} ${r.status}`); return r.json(); };
+const getJSON = async (url) => {
+  let r;
+  try { r = await fetch(url, { cache: 'no-store' }); } catch (e) { throw bootError('asset', `${url} 받기 실패`, e); }
+  if (!r.ok) throw bootError('asset', `${url} ${r.status}`);
+  return r.json();
+};
+/** WebGL을 만들 수 있는지 먼저 확인 (불가하면 품질을 낮춰도 해결되지 않으므로 바로 안내) */
+function webglAvailable() {
+  try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch { return false; }
+}
 
 try {
+  boot.step('설정을 읽는 중…');
   // ---------- 상태 ----------
   let storage = null;
   try { storage = window.localStorage; } catch { storage = null; }
@@ -48,8 +61,10 @@ try {
   store.set('scene.rain.on', false, { save: false });       // 첫 화면: 비·오로라 OFF (저장값과 무관)
   store.set('scene.aurora.on', false, { save: false });
   const S = store.settings;
-  const parsed = parseLayout(await (await fetch('config/layout.json', { cache: 'no-store' })).text());
-  if (!parsed.ok) throw new Error(`배치 파일(web/config/layout.json)을 읽지 못했습니다: ${parsed.errors.join(' / ')}`);
+  const layoutRes = await fetch('config/layout.json', { cache: 'no-store' }).catch((e) => { throw bootError('asset', 'config/layout.json 받기 실패', e); });
+  if (!layoutRes.ok) throw bootError('asset', `config/layout.json ${layoutRes.status}`);
+  const parsed = parseLayout(await layoutRes.text());
+  if (!parsed.ok) throw bootError('error', `배치 파일(web/config/layout.json)을 읽지 못했습니다: ${parsed.errors.join(' / ')}`);
   let L = parsed.layout;
   const clipInfo = await getJSON('config/ground_clips.json');
   const charInfo = await getJSON('config/character.json');
@@ -69,7 +84,9 @@ try {
   let quality = S.quality.mode === 'auto' ? governor.tier : S.quality.mode;
 
   // ---------- 렌더·장면 ----------
-  const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
+  if (!webglAvailable()) throw bootError('webgl', 'WebGL context를 만들 수 없음');
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' }); } catch (e) { throw bootError('webgl', 'WebGLRenderer 생성 실패', e); }
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.shadowMap.enabled = true;
@@ -86,7 +103,14 @@ try {
   rim.position.set(-3, 5, -4.5);
   scene.add(rim);
   // 최종 에셋(사용자 생성 Tripo 소품 + 재사용 기타). 못 불러온 것은 화면에 계속 표시 — 일반 실행은 임시 도형으로 대신하지 않음, ?dev만 대신 (W-23)
-  const { props, failed } = await loadProps();
+  const MODEL_COUNT = PROP_NAMES.length + 1;                          // 소품 + 캐릭터 (실제 받은 개수만 표시)
+  let modelsDone = 0;
+  const modelStep = () => boot.step(`3D 모델을 받는 중… ${modelsDone}/${MODEL_COUNT}`);
+  modelStep();
+  const characterP = loadCharacter('assets/character.glb', { walkSpeedRef: charInfo.walk_speed })
+    .then((c) => { modelsDone++; modelStep(); return c; }, (e) => { throw bootError('asset', 'assets/character.glb 받기 실패', e); });
+  characterP.catch(() => {});                                          // 소품을 기다리는 동안 처리 안 된 거부 경고 방지 (아래 await에서 처리)
+  const { props, failed } = await loadProps(undefined, { onLoaded: () => { modelsDone++; modelStep(); } });
   let worldApi, usingProps = true;
   const warnEl = $('assetWarn');
   if (failed.length && DEV) {
@@ -98,7 +122,7 @@ try {
   } else {
     worldApi = buildWorld(props, L, terrain);
     if (failed.length) {
-      warnEl.textContent = `에셋을 불러오지 못했어요: ${failed.map((f) => f.name).join(', ')} — 해당 물체는 보이지 않습니다 (web/assets/props/ 확인)`;
+      warnEl.textContent = `일부 물체를 불러오지 못해 보이지 않아요 (${failed.map((f) => f.name.replace('.glb', '')).join(', ')}) — 새로고침하면 다시 받아요`;
       warnEl.hidden = false;
       console.error('에셋 불러오기 실패', failed);
     }
@@ -120,7 +144,8 @@ try {
   const marker = new THREE.Mesh(new THREE.RingGeometry(0.07, 0.1, 32).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffe2b0, transparent: true, opacity: 0, depthWrite: false }));
   scene.add(marker);
   let markerT = 0;
-  const character = await loadCharacter('assets/character.glb', { walkSpeedRef: charInfo.walk_speed });
+  const character = await characterP;
+  boot.step('첫 화면을 그리는 중…');
   scene.add(character.root);
   markOccluder(character.root, 1);
   character.root.name = 'character_root';
@@ -391,7 +416,11 @@ try {
     const w = stage.clientWidth, h = stage.clientHeight;
     if (insetX || insetY) camera.setViewOffset(w, h, insetX, insetY, w, h); else camera.clearViewOffset();
   }
-  function setUIHidden(v) { document.body.classList.toggle('ui-hidden', v); }
+  function setUIHidden(v) {
+    const was = document.body.classList.contains('ui-hidden');
+    document.body.classList.toggle('ui-hidden', v);
+    if (v && !was) $('uiHint').focus({ preventScroll: true });          // 숨긴 버튼에 남은 키보드 포커스 → 되돌리기 버튼으로
+  }
   addEventListener('keydown', (e) => { if (e.key === 'Escape') setUIHidden(false); });
   $('uiHint').addEventListener('click', () => setUIHidden(false));
 
@@ -405,18 +434,21 @@ try {
     },
     qualityStatus() {
       const off = Object.entries(S.quality.effectsOff).filter(([, v]) => v).map(([k]) => k);
-      return `적용 품질: ${QNAME[quality]}${S.quality.mode === 'auto' ? ' (자동)' : ''}${off.length ? ` · 끈 효과 ${off.length}` : ''}`;
+      return `적용 품질: ${QNAME[quality]}${S.quality.mode === 'auto' ? ' (자동)' : ''}${off.length ? ` · 사용 안 함 효과 ${off.length}개` : ''}`;
     },
   });
   setInterval(() => panel.refresh(), 500);
+  const hud = createHud($('ui'), store, { savePNG, setUIHidden, storage, autoHelp: !EDIT });
 
   // ---------- 루프 ----------
   let last = performance.now();
   let lastFov = camera.fov;
+  let shown = false;
   function frame(now) {
     const realMs = now - last;
     last = now;
     step(realMs);
+    if (!shown) { shown = true; boot.done(); }                           // 첫 프레임을 그린 뒤에 로딩 화면을 닫음
     requestAnimationFrame(frame);
   }
   /** 한 프레임 진행 (rAF 또는 검사용 advance) */
@@ -456,7 +488,7 @@ try {
     if (!window.__camp.firstFrameMs) window.__camp.firstFrameMs = Math.round(performance.now());   // 탐색 시작 → 첫 프레임 (로딩 시간)
     if (DEBUG) $('debug').textContent = `${mode()} · ${cc.state} ${character.clip} · pending ${ctrl.pending ? ctrl.pending.type : '-'} · 불 ${runtime.fireActual.toFixed(2)} · 비 ${rainState.phase} · ${QNAME[quality]} · ${(realMs).toFixed(1)}ms`;
   }
-  window.__camp = { THREE, renderer, scene, camera, store, character, rig, rainState, fireW, runtime, clock, post, fire, sky, rain, panel, governor, editor, firePos, logHit,
+  window.__camp = { THREE, renderer, scene, camera, store, character, rig, rainState, fireW, runtime, clock, post, fire, sky, rain, panel, hud, governor, editor, firePos, logHit,
     get ctrl() { return ctrl; }, get grid() { return grid; }, get rest() { return rest; }, get L() { return L; }, get mode() { return mode(); }, get testing() { return testing; },
     get quality() { return quality; }, CHAR_LOOK, pick, onTap, draw, savePNG, terrain, world, worldApi, usingProps, failed, wetness, wetLook, applyLayout, check,
     tapAt(x, y) { const req = pick(x, y); return req ? ctrl.request(req) : null; },
@@ -464,10 +496,8 @@ try {
     advance(seconds, fps = 60, render = true) { const n = Math.max(1, Math.round(seconds * fps)); for (let i = 0; i < n; i++) step(1000 / fps, render || i === n - 1); } };
   requestAnimationFrame(frame);
   $('debug').hidden = !DEBUG;
-  bootEl.hidden = true;
   if (!character.hasWalk) console.info('걷기 클립 없음 — 임시로 Idle_Stand 사용');
 } catch (err) {
-  bootEl.textContent = '장면을 불러오지 못했습니다: ' + err.message;
-  bootEl.classList.add('err');
-  console.error(err);
+  if (err.cause) console.error('원인', err.cause);
+  boot.fail(err.kind || 'error', err);                                 // 화면엔 쉬운 설명·다시 시도, 원문은 콘솔
 }

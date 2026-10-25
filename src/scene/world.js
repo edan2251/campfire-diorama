@@ -10,7 +10,7 @@ import { getUnit, unitsOf, REST } from '../logic/layout_model.js';
 export const PROP_NAMES = ['island', 'tent', 'log', 'firewood', 'stone_ring', 'guitar_case', 'guitar', 'rock', 'grass'];
 
 /** 소품 불러오기. 실패한 것은 빼고 이름을 돌려줌 (조용히 다른 것으로 바꾸지 않음, W-23) */
-export async function loadProps(base = 'assets/props/') {
+export async function loadProps(base = 'assets/props/', { onLoaded } = {}) {
   const loader = new GLTFLoader();
   const props = {}, failed = [];
   await Promise.all(PROP_NAMES.map(async (n) => {
@@ -19,6 +19,7 @@ export async function loadProps(base = 'assets/props/') {
       // 그림자는 앞면으로 그림 (2026-10-25): 기본(뒷면)은 물체를 땅에 묻으면 빛이 빠져나가는 뒷면이 땅과 거의 같은 깊이라 밑동에 밝은 틈이 생겼음
       g.scene.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.material.shadowSide = THREE.FrontSide; } });
       props[n] = g.scene;
+      onLoaded?.(n);                                     // 로딩 화면 완료 개수 (PUB-03)
     } catch (e) { failed.push({ name: `${n}.glb`, error: e?.message ?? String(e) }); }
   }));
   return { props, failed };

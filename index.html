@@ -4,18 +4,52 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>별밤 캠프파이어 디오라마</title>
-<meta name="description" content="별이 있는 어두운 공간의 부유 섬에서 SD 캐릭터가 모닥불 곁 통나무에 기대 쉬는 3D 디오라마">
+<meta name="description" content="별빛 아래 작은 섬을 둘러보고, 모닥불 곁에서 쉬며 나만의 장면을 촬영해 보세요.">
+<!-- 공유 정보 (PUB-03): 대표 이미지 og.jpg = 실제 장면 첫 구도 렌더 (tools/pub_og_capture.js). 공개 주소는 tools/deploy_pages.mjs SITE_URL과 같게 -->
+<link rel="canonical" href="https://starlit-camp.pages.dev/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="별밤 캠프파이어 디오라마">
+<meta property="og:title" content="별밤 캠프파이어 디오라마">
+<meta property="og:description" content="별빛 아래 작은 섬을 둘러보고, 모닥불 곁에서 쉬며 나만의 장면을 촬영해 보세요.">
+<meta property="og:url" content="https://starlit-camp.pages.dev/">
+<meta property="og:image" content="https://starlit-camp.pages.dev/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="별밤의 작은 부유 섬, 텐트 옆 모닥불 곁 통나무에 기대 쉬는 캐릭터">
+<meta property="og:locale" content="ko_KR">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="별밤 캠프파이어 디오라마">
+<meta name="twitter:description" content="별빛 아래 작은 섬을 둘러보고, 모닥불 곁에서 쉬며 나만의 장면을 촬영해 보세요.">
+<meta name="twitter:image" content="https://starlit-camp.pages.dev/og.jpg">
+<meta name="theme-color" content="#070a17">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   :root { --bg: #070a17; --ink: #f3e9df; --muted: #b8aca4; --panel: rgba(18, 20, 34, 0.86); --line: rgba(255, 255, 255, 0.12); --accent: #f0a35a; }
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 14px/1.5 "Malgun Gothic", system-ui, sans-serif; overflow: hidden; }
   #stage { position: fixed; inset: 0; }
   #stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
-  #boot { position: fixed; left: 16px; bottom: 16px; padding: 8px 12px; border-radius: 8px; background: var(--panel); color: var(--muted); font-size: 12.5px; }
-  #boot.err { color: #ff8f8f; }
-  #toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); padding: 7px 14px; border-radius: 999px; background: var(--panel); color: var(--ink); font-size: 13px; pointer-events: none; }
+  #toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); padding: 7px 14px; border-radius: 999px; background: var(--panel); color: var(--ink); font-size: 13px; pointer-events: none; z-index: 40; }
   #restLabel { position: fixed; transform: translate(-50%, -100%); padding: 3px 10px; border-radius: 999px; background: rgba(240, 163, 90, 0.92); color: #1d1208; font-size: 12.5px; font-weight: 600; pointer-events: none; white-space: nowrap; }
   #debug { position: fixed; left: 12px; top: 12px; padding: 6px 10px; border-radius: 8px; background: var(--panel); color: var(--muted); font: 12px/1.4 ui-monospace, Consolas, monospace; pointer-events: none; }
   #assetWarn { position: fixed; left: 50%; top: 12px; transform: translateX(-50%); max-width: min(92vw, 640px); padding: 7px 14px; border-radius: 10px; background: rgba(120, 30, 30, 0.9); color: #ffe6e6; font-size: 13px; z-index: 30; }
+  /* 로딩·실패 화면 (PUB-03): 3D 시작 전에도 보이는 정지 대표 이미지 + 실제 단계. 첫 렌더 뒤 사라짐. 입력을 장면으로 넘기지 않음 */
+  #boot { position: fixed; inset: 0; z-index: 50; display: grid; place-items: end center; padding: 0 16px max(32px, env(safe-area-inset-bottom)); box-sizing: border-box;
+    background: #070a17 url("og.jpg") center / cover no-repeat; transition: opacity 0.6s ease; }
+  #boot::before { content: ""; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(7, 10, 23, 0.25), rgba(7, 10, 23, 0.55) 60%, rgba(7, 10, 23, 0.85)); }
+  #boot.done { opacity: 0; pointer-events: none; }
+  .boot-card { position: relative; width: min(440px, 100%); padding: 14px 18px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); text-align: center; }
+  .boot-card h1 { margin: 0 0 4px; font-size: 17px; font-weight: 600; letter-spacing: 0.02em; }
+  #bootStep { margin: 0; color: var(--muted); font-size: 13px; min-height: 1.5em; }
+  #bootStep::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 7px; border-radius: 50%; background: var(--accent); vertical-align: 1px; animation: bootPulse 1.2s ease-in-out infinite; }
+  #boot.fail #bootStep::before { display: none; }
+  #bootFail { margin-top: 10px; text-align: left; font-size: 13px; }
+  #bootFail p { margin: 0 0 6px; }
+  #bootFail ul { margin: 0 0 10px; padding-left: 18px; color: var(--muted); }
+  #bootFail .still { display: inline-block; margin-bottom: 8px; padding: 2px 8px; border-radius: 999px; background: rgba(255, 255, 255, 0.1); color: var(--muted); font-size: 11.5px; }
+  #bootRetry { font: inherit; font-size: 14px; color: #1d1208; background: var(--accent); border: 0; border-radius: 8px; padding: 9px 18px; min-height: 40px; cursor: pointer; }
+  #bootRetry:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+  @keyframes bootPulse { 50% { opacity: 0.3; } }
+  @media (prefers-reduced-motion: reduce) { #bootStep::before { animation: none; } #boot { transition: none; } }
 </style>
 <link rel="stylesheet" href="src/ui/panel.css">
 <script type="importmap">
@@ -23,6 +57,38 @@
   "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
+</script>
+<script>
+  // 로딩·실패 표시 (일반 스크립트 — 모듈·CDN을 못 받아도 동작). main.js가 단계·완료·실패를 알림
+  window.__boot = (function () {
+    var FAIL = {
+      module: { p: '프로그램 파일을 받지 못했어요.', tips: ['인터넷 연결을 확인해 주세요.', '회사·학교 망이나 차단 확장 기능이 jsdelivr.net을 막고 있으면 열리지 않아요.'] },
+      webgl: { p: '이 브라우저·기기에서 3D 그래픽(WebGL)을 시작하지 못했어요.', tips: ['브라우저 설정에서 하드웨어 가속(그래픽 가속)이 켜져 있는지 확인해 주세요.', '최신 Chrome·Edge·Safari·Firefox에서 열어 보세요.', '그래픽 드라이버가 막혀 있는 원격·가상 환경에서는 열리지 않을 수 있어요.'] },
+      asset: { p: '장면 파일(모델·설정)을 받지 못했어요.', tips: ['인터넷 연결이 잠깐 끊겼을 수 있어요. 다시 시도해 주세요.'] },
+      error: { p: '장면을 시작하는 중에 문제가 생겼어요.', tips: ['다시 시도해도 같으면 다른 브라우저에서 열어 보세요.'] }
+    };
+    var failed = false;
+    function $(id) { return document.getElementById(id); }
+    return {
+      step: function (text) { if (!failed && $('bootStep')) $('bootStep').textContent = text; },
+      fail: function (kind, err) {
+        if (failed) return; failed = true;
+        if (err) console.error('[boot]', kind, err);
+        var f = FAIL[kind] || FAIL.error, box = $('bootFail'), boot = $('boot');
+        boot.classList.add('fail'); boot.classList.remove('done'); boot.hidden = false;
+        $('bootStep').textContent = '';
+        box.innerHTML = '';
+        var still = document.createElement('span'); still.className = 'still'; still.textContent = '정지 이미지 — 3D 장면이 아닙니다'; box.appendChild(still);
+        var p = document.createElement('p'); p.textContent = f.p; box.appendChild(p);
+        var ul = document.createElement('ul'); f.tips.forEach(function (t) { var li = document.createElement('li'); li.textContent = t; ul.appendChild(li); }); box.appendChild(ul);
+        var b = document.createElement('button'); b.id = 'bootRetry'; b.type = 'button'; b.textContent = '다시 시도';
+        b.onclick = function () { location.reload(); };   // 새로고침 = 렌더러·이벤트·타이머를 중복 없이 처음부터
+        box.appendChild(b); box.hidden = false; b.focus();
+      },
+      done: function () { if (failed) return; var b = $('boot'); b.classList.add('done'); setTimeout(function () { b.hidden = true; }, 700); },
+      get failed() { return failed; }
+    };
+  })();
 </script>
 </head>
 <body>
@@ -33,8 +99,14 @@
 <div id="ui"></div>
 <div id="editRoot"></div>
 <div id="assetWarn" role="alert" hidden></div>
-<button id="uiHint" type="button">UI 보이기 (Esc)</button>
-<div id="boot" role="status">장면을 준비하는 중…</div>
-<script type="module" src="src/main.js"></script>
+<button id="uiHint" type="button">UI 보이기</button>
+<div id="boot" role="status" aria-live="polite">
+  <div class="boot-card">
+    <h1>별밤 캠프파이어 디오라마</h1>
+    <p id="bootStep">프로그램을 받는 중…</p>
+    <div id="bootFail" role="alert" hidden></div>
+  </div>
+</div>
+<script type="module" src="src/main.js" onerror="__boot.fail('module')"></script>
 </body>
 </html>

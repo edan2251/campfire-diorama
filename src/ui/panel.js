@@ -7,6 +7,8 @@ const pct = (v) => `${Math.round(v * 100)}`;
 const f2 = (v) => v.toFixed(2);
 const RANGE = (path, label, min, max, step, fmt = f2) => ({ t: 'range', path, label, min, max, step, fmt });
 const TOGGLE = (path, label) => ({ t: 'toggle', path, label });
+// effectsOff.* 는 저장값이 '끄기'(true = 끔) — 화면에는 '효과 — 사용 / 사용 안 함'으로 뒤집어 보여 줌 (저장 형식·의미는 그대로, PUB-02)
+const EFFECT = (key, label) => ({ t: 'toggle', path: `quality.effectsOff.${key}`, label, invert: true });
 const SEG = (path, label, options) => ({ t: 'seg', path, label, options });
 
 const TABS = [
@@ -31,8 +33,9 @@ const TABS = [
       TOGGLE('screen.grain.on', '필름 그레인'), RANGE('screen.grain.amount', '그레인 세기', 0, 0.6, 0.02, f2)] },
   { id: 'quality', label: '품질',
     basic: [SEG('quality.mode', '품질', [['auto', '자동'], ['high', '높음'], ['medium', '중간'], ['low', '낮음']]), { t: 'status', id: 'quality' }],
-    adv: [TOGGLE('quality.effectsOff.sparks', '불티 끄기'), TOGGLE('quality.effectsOff.smoke', '연기 끄기'), TOGGLE('quality.effectsOff.splashes', '물 튀김 끄기'),
-      TOGGLE('quality.effectsOff.aurora', '오로라 효과 끄기'), TOGGLE('quality.effectsOff.dof', '심도 끄기'), TOGGLE('quality.effectsOff.shadows', '그림자 끄기'), TOGGLE('quality.effectsOff.ao', '접촉 음영 끄기')] },
+    adv: [{ t: 'note', text: '화면이 무거울 때 효과를 하나씩 끌 수 있어요.' },
+      EFFECT('sparks', '불티 효과'), EFFECT('smoke', '연기 효과'), EFFECT('splashes', '물 튀김 효과'),
+      EFFECT('aurora', '오로라 효과'), EFFECT('dof', '심도 효과'), EFFECT('shadows', '그림자'), EFFECT('ao', '접촉 음영')] },
 ];
 
 const el = (tag, attrs = {}, ...kids) => {
@@ -81,15 +84,18 @@ export function createPanel(root, store, app) {
       return el('label', { class: 'row range', for: id }, el('span', { class: 'lab' }, c.label), inp, out);
     }
     if (c.t === 'toggle') {
-      const b = el('button', { class: 'tog', role: 'switch', onclick: () => store.set(c.path, !get(c.path)) });
-      const r = () => { const on = !!get(c.path); b.setAttribute('aria-checked', String(on)); b.textContent = on ? '켜짐' : '꺼짐'; };
+      const labId = 'l_' + c.path.replace(/\./g, '_');
+      // 이름 = 설정 이름(“비”), 상태 = aria-checked (보이는 글자 “켜짐/꺼짐”이 이름이 되지 않게)
+      const b = el('button', { class: 'tog', type: 'button', role: 'switch', 'aria-label': c.label, onclick: () => store.set(c.path, !get(c.path)) });
+      // 스위치 상태 = 보이는 이름의 상태 (invert: 저장값 true(끔) → '사용 안 함')
+      const r = () => { const on = c.invert ? !get(c.path) : !!get(c.path); b.setAttribute('aria-checked', String(on)); b.textContent = c.invert ? (on ? '사용' : '사용 안 함') : (on ? '켜짐' : '꺼짐'); };
       refreshers.push(r); r();
-      return el('div', { class: 'row' }, el('span', { class: 'lab' }, c.label), b);
+      return el('div', { class: 'row' }, el('span', { class: 'lab', id: labId }, c.label), b);
     }
     if (c.t === 'seg') {
       const g = el('div', { class: 'seg', role: 'radiogroup', 'aria-label': c.label });
       const btns = c.options.map(([v, text]) => {
-        const b = el('button', { role: 'radio', onclick: () => store.set(c.path, v) }, text);
+        const b = el('button', { type: 'button', role: 'radio', onclick: () => store.set(c.path, v) }, text);
         b._v = v; g.append(b); return b;
       });
       const r = () => { for (const b of btns) b.setAttribute('aria-checked', String(get(c.path) === b._v)); };
@@ -129,12 +135,10 @@ export function createPanel(root, store, app) {
       return el('div', { class: 'row col' }, el('span', { class: 'lab' }, '시점 저장 (카메라·화면 효과만, 날씨 제외)'), wrap);
     }
     if (c.t === 'photoActions') {
-      const pause = el('button', { onclick: () => store.setPaused(!store.photo.paused) });
-      const apply = el('button', { onclick: () => { store.applyPhotoToView(); app.toast?.('감상 화면에도 적용했어요'); } }, '감상 화면에도 적용');
-      const hide = el('button', { onclick: () => app.setUIHidden(true) }, 'UI 숨기기');
-      const png = el('button', { class: 'accent', onclick: () => app.savePNG() }, 'PNG 저장');
-      refreshers.push(() => { pause.textContent = store.photo.paused ? '재개' : '일시 정지'; pause.setAttribute('aria-pressed', String(store.photo.paused)); apply.disabled = !store.photo.active; });
-      return el('div', { class: 'actions' }, pause, apply, hide, png);
+      // 사진 저장·일시 정지·UI 숨기기는 촬영 모드 위쪽 막대로 옮김 (ui/hud.js, PUB-02) — 여기는 촬영 구도를 감상에도 쓰는 버튼만
+      const apply = el('button', { type: 'button', onclick: () => { store.applyPhotoToView(); app.toast?.('감상 화면에도 적용했어요'); } }, '감상 화면에도 적용');
+      refreshers.push(() => { apply.disabled = !store.photo.active; });
+      return el('div', { class: 'row col' }, el('div', { class: 'actions' }, apply), el('p', { class: 'note' }, '사진 저장·일시 정지·UI 숨기기는 촬영 모드에서 화면 위쪽 막대에 있어요.'));
     }
     return null;
   }
