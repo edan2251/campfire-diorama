@@ -155,8 +155,10 @@ void main() {
 
 // 인트로 필터 (Presentation Mode, 2026-10-29): 최종 화면(sRGB)을 전시용 그림처럼 — 붓 느낌(Kuwahara)·계조 단순화·하이라이트 누르기·
 // 채도·대비·따뜻한/차가운 색 나눔·종이 질감·비네팅·깊이 윤곽선. 인트로가 아닐 때(탐험)는 이 단계를 아예 그리지 않음 → 원래 화질 그대로.
-// 빗물 씻김(uWash 0→1): 화면 위에서 불규칙한 물줄기(가는 줄기 + 불규칙한 물 막)가 흘러내리며, 물이 지나간 곳부터 필터가 벗겨짐.
-//   해석적 마스크(버퍼 없음): 줄기마다 시작 시각·속도·굵기·구불거림이 다르고, 물 막의 앞선이 잡음으로 울퉁불퉁. 물이 있는 곳은 살짝 굴절·반짝임.
+// 번짐 전환(uWash 0→1, 2차 2026-10-29 — 사용자 선택 "붓질이 녹아 번짐"): 그림이 물에 젖은 수채화처럼 녹음. 모닥불(uOrigin)에서 시작한
+//   물 번짐이 종이에 스미듯 불규칙한 가장자리로 퍼지고(작은 번짐 몇 개가 뒤따라 생겨 합쳐짐), 번진 자리는 물감이 풀리며 실제 장면이 드러남.
+//   가장자리 바깥엔 물감이 밀려 모인 진한 물자국, 안쪽엔 덜 풀린 물감 찌꺼기가 밖으로 끌려 나가며 옅어짐. 해석적 마스크(버퍼 없음).
+//   (1차 "빗물 물줄기"는 사용자 의견: 연출이 이상함)
 const PRESENT_FS = /* glsl */ `
 #include <packing>
 uniform sampler2D tColor, tDepth;
@@ -164,6 +166,7 @@ uniform vec2 uTexel;
 uniform float uAspect, uTime, cameraNear, cameraFar;
 uniform float uAmount, uSat, uContrast, uFlatten, uPosterize, uPaint, uOutline, uPaper, uVignette, uWarmth;
 uniform float uWash, uSeed, uStreaks;
+uniform vec2 uOrigin;
 varying vec2 vUv;
 float h11(float n) { return fract(sin(n * 127.1 + uSeed * 311.7) * 43758.5453); }
 float h21(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
@@ -238,58 +241,71 @@ vec3 stylize(vec2 uv) {
   return clamp(c, 0.0, 1.0);
 }
 
+float smin(float a, float b, float k) { float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0); return mix(b, a, h) - k * h * (1.0 - h); }
+// 번짐 하나: 중심 c, 반경 r. 반경에 비례하는 큰 꽃잎 모양 굴곡 + 종이 결의 잔 굴곡 → 원이 아닌 수채 번짐 가장자리. 음수 = 번진 안쪽
+float bloom(vec2 p, vec2 c, float r, float s) {
+  vec2 d = p - c; float L = length(d); vec2 dir = d / max(L, 1e-4);
+  float lobe = (fbm(dir * 1.7 + s * 13.1) - 0.5) * 0.7 + (fbm(dir * 4.3 + s * 5.7) - 0.5) * 0.3;
+  return L - r * (1.0 + lobe * 0.75);
+}
+vec2 washField(vec2 p, float t) {                                       // (거리 f, 큰 번짐 반경)
+  vec2 o = uOrigin * vec2(uAspect, 1.0);
+  vec2 corner = vec2(o.x < uAspect * 0.5 ? uAspect : 0.0, o.y < 0.5 ? 1.0 : 0.0);
+  float maxR = length(corner - o) * 1.4 + 0.08;                         // 굴곡이 안쪽으로 들어가도 끝엔 화면 전체
+  // 아주 작은 점에서 천천히 스며 나와 점점 넓게 (시작 속도 0). 1차: 너무 빨라 0.34에 거의 전체, 2차: 처음 순간에 툭 터지는 느낌 → 사용자 의견
+  float g = mix(pow(t, 1.8), t * t * (3.0 - 2.0 * t), 0.5);
+  float R = maxR * g;
+  float f = bloom(p, o, R, uSeed);
+  for (int i = 0; i < 12; i++) {                                         // 뒤따라 떨어진 작은 번짐들 → 큰 번짐과 부드럽게 합쳐짐
+    if (float(i) >= uStreaks) break;
+    float fi = float(i) + uSeed * 7.0;
+    vec2 c = vec2(mix(0.08, 0.92, h11(fi * 3.1)) * uAspect, mix(0.1, 0.9, h11(fi * 5.3 + 1.0)));
+    float st = mix(0.18, 0.6, h11(fi * 7.7 + 2.0));
+    float r = pow(max(0.0, t - st), 1.4) * mix(0.5, 0.95, h11(fi * 9.1 + 3.0));   // 작은 번짐도 0에서 천천히
+    if (r > 0.0) f = smin(f, bloom(p, c, r, fi), 0.09);
+  }
+  float fib = smoothstep(0.02, 0.25, R);                                // 번짐이 작을 땐 잔털도 작게 (작은 점에 잔털이 크면 튀는 듯 보임)
+  f += ((fbm(p * 26.0 + uSeed) - 0.5) * 0.022 + (fbm(p * vec2(8.0, 70.0)) - 0.5) * 0.012) * fib;   // 종이 섬유 따라 번진 잔털
+  return vec2(f, R);
+}
+
 void main() {
   vec2 uv = vUv;
-  float washed = 0.0, water = 0.0, lit = 0.0, shade = 0.0, spec = 0.0;
-  vec2 duv = vec2(0.0);
+  float washed = 0.0, ring = 0.0, wet = 0.0;
+  vec2 shift = vec2(0.0);
   if (uWash >= 0.0) {
-    float t = uWash;
-    vec2 p = vec2(vUv.x * uAspect, 1.0 - vUv.y);               // y: 위 0 → 아래 1
-    // 물줄기: 칸마다 출발 시각·속도·굵기·구불거림이 다름. 머리(물방울)가 지나간 꼬리는 시간이 갈수록 넓어져 이웃 줄기와 합쳐짐
-    // (2차: 1차는 줄기가 가늘고 물 막 앞선이 가로 띠처럼 보여 "닦아 내기"에 가까웠음)
-    float lanes = uStreaks;
-    float lw = uAspect / lanes;
-    float stream = 0.0;
-    for (int k = -1; k <= 1; k++) {
-      float li = floor(p.x / lw) + float(k);
-      float delay = h11(li) * 0.42, speed = mix(1.0, 2.0, h11(li + 17.0));
-      float w0 = mix(0.07, 0.16, h11(li + 31.0)), grow = mix(0.9, 1.8, h11(li + 43.0));
-      float head = (t - delay) * speed * 1.2;
-      if (head <= 0.0) continue;
-      float cx = (li + 0.5 + (h11(li + 53.0) - 0.5) * 0.5) * lw + sin(p.y * mix(7.0, 16.0, h11(li + 71.0)) + li * 1.7) * lw * 0.16;
-      float sx = (p.x - cx) / lw;
-      float dx = abs(sx);
-      float trail = head - p.y;                                   // 머리 위쪽(지나간 곳) > 0
-      float wy = min(1.45, w0 + grow * max(trail, 0.0) * 0.6);   // 지나간 지 오래될수록 넓게 (최대 이웃 칸까지)
-      float body = smoothstep(wy, wy * 0.72, dx) * smoothstep(-0.006, 0.02, trail);
-      float r = length(vec2(sx, (p.y - head) / lw * 0.62));
-      float drop = smoothstep(w0 * 1.6, w0 * 1.05, r);           // 물방울 머리 (조금 둥글고 큼)
-      float b = max(body, drop);
-      float fresh = exp(-max(trail, 0.0) * 4.0);                  // 갓 흐른 물일수록 잘 보임
-      if (b > stream) { stream = b; duv.x = -sign(sx) * (1.0 - min(1.0, dx / max(wy, 1e-3))) * 0.004 * b * (0.4 + 0.6 * fresh); }
-      float edge = smoothstep(wy * 0.45, wy * 0.95, dx) * body;
-      lit = max(lit, edge * step(sx, 0.0) * (0.35 + 0.65 * fresh) + drop * 0.5);   // 왼쪽 가장자리·물방울 = 밝게 (빛이 왼쪽 위)
-      shade = max(shade, edge * step(0.0, sx) * (0.3 + 0.7 * fresh));
-      spec = max(spec, smoothstep(w0 * 0.55, 0.0, length(vec2(sx + w0 * 0.45, (p.y - head + w0 * lw * 0.9) / lw * 0.62))));
-      water = max(water, b * (0.2 + 0.8 * fresh));
-    }
-    // 마지막 정리: 늦게 출발한 불규칙한 물 막이 남은 곳을 덮음 (줄기 사이 틈 → 끝에는 화면 전체)
-    float front = (t - 0.62) * 3.2 + (fbm(vec2(p.x * 3.1, t) + uSeed) - 0.5) * 0.45;
-    float sheet = smoothstep(front + 0.03, front - 0.03, p.y);
-    washed = max(sheet, stream);
-    float fade = 1.0 - smoothstep(0.84, 1.0, t);                  // 끝나 갈수록 물 표시도 사라짐
-    water *= fade; lit *= fade; shade *= fade; spec *= fade;
+    float t = clamp(uWash, 0.0, 1.0);
+    vec2 p = vec2(vUv.x * uAspect, vUv.y);
+    vec2 wf = washField(p, t);
+    float f = wf.x;
+    float band = clamp(wf.y * 0.7, 0.015, 0.2);                         // 젖은 띠 폭도 번짐 크기에 맞춰 (처음엔 좁게)
+    float ramp = smoothstep(0.0, 0.3, t);                               // 물자국·찌꺼기·굴절은 천천히 짙어짐
+    vec2 n = vec2(dFdx(f), dFdy(f)); n /= max(length(n), 1e-6);         // 번짐 바깥쪽 방향(화면)
+    washed = 1.0 - smoothstep(-0.03, 0.004, f);
+    float melt = smoothstep(-band, 0.0, f) * (1.0 - smoothstep(0.0, 0.004, f));   // 막 젖은 안쪽 띠: 물감이 풀리는 중
+    float resid = melt * melt * (0.45 + 0.45 * fbm(p * 9.0 + uSeed)) * ramp;        // 덜 풀린 물감 찌꺼기(얼룩덜룩)
+    washed = min(washed, 1.0 - resid);
+    shift = -n * melt * 0.03 * ramp;                                          // 찌꺼기는 바깥(가장자리)으로 끌려감
+    float ro = 1.0 - smoothstep(0.0, 0.07, f);
+    ring = ro * ro * smoothstep(-0.01, 0.004, f) * (0.6 + 0.4 * fbm(p * 24.0)) * ramp;   // 가장자리 바깥으로 넓게 모인 물감 = 물자국 (1차: 가는 선 → 금처럼 보임)
+    wet = smoothstep(-0.14, -0.01, f) * (1.0 - smoothstep(0.0, 0.01, f)) * (1.0 - smoothstep(0.85, 1.0, t)); // 갓 젖은 안쪽 = 물기로 살짝 밝고 맑게 → 마르며 사라짐
 #if REFRACT
-    uv += vec2(duv.x / uAspect, 0.0) * fade;                       // 물줄기 좌표(가로 = 화면비 배) → 화면 UV
+    uv += n * vec2(1.0 / uAspect, 1.0) * smoothstep(-0.03, 0.0, f) * (1.0 - smoothstep(0.0, 0.01, f)) * 0.0025 * ramp;
 #endif
-    if (t >= 1.0) washed = 1.0;
+    float fade = 1.0 - smoothstep(0.9, 1.0, t);
+    ring *= fade;
+    if (t >= 1.0) { washed = 1.0; ring = 0.0; wet = 0.0; shift = vec2(0.0); }
   }
   vec3 orig = texture2D(tColor, uv).rgb;
   float k = uAmount * (1.0 - washed);
-  vec3 o = k > 0.001 ? mix(orig, stylize(uv), k) : orig;
-  // 유리 위 물: 왼쪽 가장자리·물방울 반짝임, 오른쪽 가장자리 그늘, 안쪽은 아주 살짝 어둡고 맑게
-  o += vec3(0.82, 0.88, 1.0) * (lit * 0.13 + spec * 0.35);
-  o *= 1.0 - shade * 0.12 - water * 0.03;
+  vec3 o = orig;
+  if (k > 0.001) {
+    vec3 s = stylize(uv + shift * vec2(1.0 / uAspect, 1.0));
+    float sl = luma(s);
+    s = mix(s, mix(vec3(sl), s, 1.35) * 0.62, ring * 0.7);              // 진한 물자국(조금 더 짙고 진한 색)
+    o = mix(orig, s, k);
+  }
+  o += (vec3(0.022, 0.026, 0.036) + o * 0.06) * wet;                 // (2차: 더 밝게 하면 번진 자리가 뿌연 얼룩처럼 보임)
   gl_FragColor = vec4(clamp(o, 0.0, 1.0), 1.0);
 }`;
 
@@ -343,7 +359,7 @@ export function createPost(renderer, { quality = 'high' } = {}) {
     uniforms: { tColor: { value: ldrRT.texture }, tDepth: { value: null }, uTexel: { value: new THREE.Vector2() }, uAspect: { value: 1 }, uTime: { value: 0 },
       cameraNear: { value: 0.05 }, cameraFar: { value: 400 },
       uAmount: { value: 0 }, uSat: { value: 0 }, uContrast: { value: 0 }, uFlatten: { value: 0 }, uPosterize: { value: 0 }, uPaint: { value: 0 }, uOutline: { value: 0 },
-      uPaper: { value: 0 }, uVignette: { value: 0 }, uWarmth: { value: 0 }, uWash: { value: -1 }, uSeed: { value: 7 }, uStreaks: { value: 16 } },
+      uPaper: { value: 0 }, uVignette: { value: 0 }, uWarmth: { value: 0 }, uWash: { value: -1 }, uSeed: { value: 7 }, uStreaks: { value: 5 }, uOrigin: { value: new THREE.Vector2(0.5, 0.5) } },
     depthTest: false, depthWrite: false,
   });
   presentMat.toneMapped = false;
@@ -446,7 +462,7 @@ export function createPost(renderer, { quality = 'high' } = {}) {
         legacyQuad.render(renderer);
         return;
       }
-      // present = { amount 0..1, wash -1(없음)|0..1, filter{...}, seed, streaks }
+      // present = { amount 0..1, wash -1(없음)|0..1, filter{...}, seed, streaks(작은 번짐 수), origin[u,v](번짐 시작점) }
       info.presentOn = !!(present && (present.amount > 0.001 || present.wash >= 0));
       if (!info.presentOn) {
         renderer.setRenderTarget(null);
@@ -463,7 +479,8 @@ export function createPost(renderer, { quality = 'high' } = {}) {
       u.uSat.value = f.saturation ?? 0; u.uContrast.value = f.contrast ?? 0; u.uFlatten.value = f.flatten ?? 0;
       u.uPosterize.value = f.posterize ?? 0; u.uPaint.value = f.paint ?? 0; u.uOutline.value = f.outline ?? 0;
       u.uPaper.value = f.paper ?? 0; u.uVignette.value = f.vignette ?? 0; u.uWarmth.value = f.warmth ?? 0;
-      u.uWash.value = present.wash ?? -1; u.uSeed.value = present.seed ?? 7; u.uStreaks.value = present.streaks ?? 16;
+      u.uWash.value = present.wash ?? -1; u.uSeed.value = present.seed ?? 7; u.uStreaks.value = present.streaks ?? 5;
+      if (present.origin) u.uOrigin.value.set(present.origin[0], present.origin[1]);
       renderer.setRenderTarget(null);
       presentQuad.render(renderer);
     },

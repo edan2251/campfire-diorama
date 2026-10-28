@@ -8,8 +8,8 @@ export const START_MODES = ['always', 'first', 'never'];          // 항상 표�
 export const EASINGS = ['calm', 'smooth', 'gentle', 'linear'];      // 차분(사인) · 부드럽게(3차) · 끝만 느리게 · 일정
 export const ALIGNS = ['left', 'center', 'right'];
 export const VERTICALS = ['top', 'middle', 'bottom'];
-export const MEDIA_LAYOUTS = ['none', 'single', 'compare', 'cards'];   // 없음 · 이미지 1장 · 비교 2장 · 작은 카드 3개
-export const MEDIA_MAX = { none: 0, single: 1, compare: 2, cards: 3 };
+export const MEDIA_LAYOUTS = ['none', 'single', 'compare', 'pair', 'cards'];   // 없음 · 이미지 1장 · 비교 2장(→) · 나란히 2장 · 작은 카드 3개
+export const MEDIA_MAX = { none: 0, single: 1, compare: 2, pair: 2, cards: 3 };
 
 /** 필터 값 범위 (0이면 그 효과 없음). strength = 전체 세기(0 = 필터 없음, 1 = 그대로) */
 export const FILTER_RANGES = {
@@ -26,7 +26,25 @@ export const FILTER_PRESETS = {
 export const FILTER_PRESET_NAMES = { gouache: '과슈(붓 느낌)', print: '판화(윤곽선·종이)', soft: '부드럽게(색만)', none: '필터 없음' };
 
 const CAM = STORE_SCHEMA.camera;
-const LIMITS = { label: 40, title: 120, subtitle: 160, body: 1200, keyword: 30, keywords: 8, caption: 120, src: 300, action: 40, id: 40 };
+export const FOCUS_MODES = ['character', 'fire', 'target', 'point'];   // 캐릭터 · 모닥불 · 카메라 타깃 · 클릭한 곳(point [x,y,z])
+/** 자유 배치 상자 (편집기에서 끌어 놓기·크기 조절). x·y = 왼쪽 위(화면 %), w = 너비(화면 너비 %), scale = 글 크기 배율. 휴대폰 세로에서는 쓰지 않음(자동 배치) */
+export const BOX_RANGES = { x: [-10, 100], y: [-10, 100], w: [8, 100], scale: [0.4, 3] };
+const LIMITS = { label: 40, title: 120, subtitle: 160, body: 1200, keyword: 30, keywords: 8, caption: 120, src: 300, action: 40, id: 40, demoLabel: 24, demoTag: 30, demoNote: 140, demos: 8, sbxCommand: 120, sbxNote: 200, sbxButton: 24, pointLabel: 12, point: 200, points: 4, mediaLabel: 40 };
+/** 체험 버튼(섹션 안 "눌러 보기", U-17): 디오라마 기능 하나를 그 기능이 잘 보이는 구도(camera·심도)로 보여 줌.
+ *  scene = 그동안만 바꿀 장면 값(감상 설정 경로, 저장 안 함 — 섹션을 떠나거나 탐험으로 가면 원래대로).
+ *  act = 'walk'(캐릭터가 walkTo [x,z]로 걸어갔다 통나무로 돌아와 앉기를 되풀이) · 'focus'(camera.dof ↔ focusTo를 period초마다 오감) · 'none' */
+export const DEMO_ACTS = ['none', 'walk', 'focus'];
+/** 체험 패널(U-18, 섹션 sandbox): 'layout' = ① 글로 시키기(명령 문장 → 물체가 움직임) ② 직접 옮기기(편집 모드 기즈모 미리보기) ③ 글 상자 놀이(PPT처럼).
+ *  모두 미리보기 — 패널을 닫거나 섹션을 떠나면 원래대로. target = 처음 고른 물체(배치 단위 id), command = 처음에 타자 치듯 써 넣을 예시 문장 */
+export const SANDBOX_KINDS = ['layout'];
+export const SANDBOX_TARGETS = ['rock0', 'rock1', 'rock2', 'rock3', 'tent', 'guitar_case', 'grass0', 'grass1', 'grass2', 'grass3', 'grass4', 'grass5', 'grass6', 'grass7', 'grass8'];
+export function defaultSandbox() {
+  return { kind: 'layout', button: '직접 해 보기', title: '직접 해 보기', target: 'rock0', command: '', notes: { command: '', direct: '', text: '' }, boxText: '' };
+}
+export const DEMO_SCENE = {
+  'fire.base': [0, 1.5], 'fire.sparks': [0, 1], 'fire.smoke': [0, 1], 'aurora.on': 'bool', 'aurora.intensity': [0, 1], 'aurora.speed': [0, 1], 'meteors.on': 'bool', 'meteors.rate': [0, 1],
+  'rain.on': 'bool', 'rain.intensity': [0, 1], wind: [0, 1], 'stars.intensity': [0, 1],
+};
 
 const isObj = (v) => v && typeof v === 'object' && !Array.isArray(v);
 const clone = (v) => JSON.parse(JSON.stringify(v));
@@ -38,10 +56,10 @@ export function defaultCamera() {
 }
 export function defaultSection(i = 0) {
   return {
-    id: `section-${i + 1}`, hidden: false, label: 'SECTION', title: '새 섹션', subtitle: '', body: '', keywords: [],
-    layout: { align: 'left', vertical: 'bottom', maxWidth: 440 },
-    media: { layout: 'none', items: [] },
-    camera: defaultCamera(), cameraMobile: null, filter: {}, transition: {}, action: null,
+    id: `section-${i + 1}`, hidden: false, label: 'SECTION', title: '새 섹션', subtitle: '', body: '', keywords: [], points: [],
+    layout: { align: 'left', vertical: 'bottom', maxWidth: 440, box: null },
+    media: { layout: 'none', label: '', items: [], box: null },
+    camera: defaultCamera(), cameraMobile: null, filter: {}, transition: {}, action: null, demos: [], sandbox: null,
   };
 }
 export function defaultPresentation() {
@@ -49,7 +67,7 @@ export function defaultPresentation() {
     version: PRESENTATION_VERSION,
     start: { mode: 'always' },
     transition: { camera: 1.2, content: 0.9, easing: 'calm', inputLock: 0.25 },
-    explore: { washDuration: 2.2, streaks: 16, seed: 7 },
+    explore: { washDuration: 2.2, streaks: 5, seed: 7 },   // 번짐 전환 시간 · 뒤따르는 작은 번짐 수 · 무늬 번호
     ambient: { drift: 0.25 },
     filter: { preset: 'gouache', ...FILTER_PRESETS.gouache },
     sections: [defaultSection(0)],
@@ -97,15 +115,59 @@ export function sanitizeCamera(c, path, warn, { allowNull = false } = {}) {
   };
   if (Array.isArray(c.target) && c.target.length === 3 && c.target.every(num)) out.target = c.target.map((v, i) => clamp(v, [CAM.target.min[i], CAM.target.max[i]]));
   else if (c.target !== undefined) warn.push(`${path}.target: [x, y, z] 숫자 3개가 아니어서 기본값`);
-  if (isObj(c.dof)) {
-    out.dof = {
-      on: c.dof.on !== false,
-      focus: oneOf(c.dof.focus, ['character', 'fire', 'target'], 'character', `${path}.dof.focus`, warn),
-      fstop: number(c.dof.fstop, [CAM.dof.fstop.min, CAM.dof.fstop.max], 4, `${path}.dof.fstop`, warn),
-      maxBlur: number(c.dof.maxBlur, [0, 1], 0.4, `${path}.dof.maxBlur`, warn),
-    };
+  if (isObj(c.dof)) out.dof = sanitizeDof(c.dof, `${path}.dof`, warn);
+  return out;
+}
+/** 심도 { on, focus, fstop, maxBlur, point? } */
+export function sanitizeDof(v, path, warn) {
+  const out = {
+    on: v.on !== false,
+    focus: oneOf(v.focus, FOCUS_MODES, 'character', `${path}.focus`, warn),
+    fstop: number(v.fstop, [CAM.dof.fstop.min, CAM.dof.fstop.max], 4, `${path}.fstop`, warn),
+    maxBlur: number(v.maxBlur, [0, 1], 0.4, `${path}.maxBlur`, warn),
+  };
+  if (out.focus === 'point') {
+    if (Array.isArray(v.point) && v.point.length === 3 && v.point.every(num)) out.point = v.point.map((x) => clamp(x, [-50, 50]));
+    else { warn.push(`${path}.point: [x, y, z] 숫자 3개가 아니어서 초점 = 캐릭터`); out.focus = 'character'; }
   }
   return out;
+}
+export function defaultDemo(i = 0) {
+  return { id: `demo-${i + 1}`, label: '새 버튼', tag: '', note: '', noteTo: '', act: 'none', camera: defaultCamera(), cameraMobile: null, scene: {}, walkTo: null, focusTo: null, period: 3.5 };
+}
+function sanitizeDemo(d, path, warn, ids) {
+  const def = defaultDemo(ids.size);
+  if (!isObj(d)) { warn.push(`${path}: 체험 버튼이 아니어서 뺌`); return null; }
+  let id = str(d.id, LIMITS.id, `${path}.id`, warn).trim().replace(/[^\w-]/g, '-') || def.id;
+  while (ids.has(id)) id = `${id}-2`;
+  ids.add(id);
+  const scene = {};
+  if (isObj(d.scene)) {
+    for (const [k, v] of Object.entries(d.scene)) {
+      const r = DEMO_SCENE[k];
+      if (!r) { warn.push(`${path}.scene.${k}: 바꿀 수 없는 값이라 뺌`); continue; }
+      if (r === 'bool') { if (typeof v === 'boolean') scene[k] = v; else warn.push(`${path}.scene.${k}: true/false가 아니어서 뺌`); continue; }
+      if (num(v)) scene[k] = clamp(v, r); else warn.push(`${path}.scene.${k}: 숫자가 아니어서 뺌`);
+    }
+  } else if (d.scene !== undefined && d.scene !== null) warn.push(`${path}.scene: { … }가 아니어서 비움`);
+  const act = oneOf(d.act, DEMO_ACTS, 'none', `${path}.act`, warn);
+  let walkTo = null;
+  if (Array.isArray(d.walkTo) && d.walkTo.length === 2 && d.walkTo.every(num)) walkTo = d.walkTo.map((v) => clamp(v, [-4, 4]));
+  else if (d.walkTo !== undefined && d.walkTo !== null) warn.push(`${path}.walkTo: [x, z] 숫자 2개가 아니어서 기본 자리`);
+  return {
+    id,
+    label: str(d.label, LIMITS.demoLabel, `${path}.label`, warn, def.label) || def.label,
+    tag: str(d.tag, LIMITS.demoTag, `${path}.tag`, warn),
+    note: str(d.note, LIMITS.demoNote, `${path}.note`, warn),
+    noteTo: str(d.noteTo, LIMITS.demoNote, `${path}.noteTo`, warn),
+    act,
+    camera: sanitizeCamera(d.camera, `${path}.camera`, warn),
+    cameraMobile: sanitizeCamera(d.cameraMobile ?? null, `${path}.cameraMobile`, warn, { allowNull: true }),   // 휴대폰 세로 (없으면 camera)
+    scene,
+    walkTo,
+    focusTo: isObj(d.focusTo) ? sanitizeDof(d.focusTo, `${path}.focusTo`, warn) : null,
+    period: number(d.period, [1.5, 12], 3.5, `${path}.period`, warn),
+  };
 }
 export function sanitizeFilter(f, path, warn, { partial = false } = {}) {
   const out = {};
@@ -129,6 +191,15 @@ function sanitizeTransition(t, path, warn, { partial = false } = {}) {
   if (!partial) put('inputLock', number(t.inputLock, [0, 2], d.inputLock, `${path}.inputLock`, warn));
   return out;
 }
+/** 자유 배치 상자: 없으면 null(정렬·세로 위치로 자동 배치) */
+export function sanitizeBox(b, path, warn, { scale = true } = {}) {
+  if (b === undefined || b === null) return null;
+  if (!isObj(b)) { warn.push(`${path}: 상자 값이 아니어서 자동 배치`); return null; }
+  const out = {};
+  for (const k of ['x', 'y', 'w']) out[k] = +number(b[k], BOX_RANGES[k], k === 'w' ? 34 : 5, `${path}.${k}`, warn).toFixed(2);
+  if (scale) out.scale = +number(b.scale, BOX_RANGES.scale, 1, `${path}.scale`, warn).toFixed(3);
+  return out;
+}
 function sanitizeSection(s, i, warn, ids) {
   const p = `sections[${i}]`;
   const d = defaultSection(i);
@@ -141,10 +212,32 @@ function sanitizeSection(s, i, warn, ids) {
   const lay = isObj(s.layout) ? s.layout : {};
   const media = isObj(s.media) ? s.media : {};
   const mLayout = oneOf(media.layout, MEDIA_LAYOUTS, 'none', `${p}.media.layout`, warn);
+  // 짧은 항목 (예: 문제 / 해결) — 작은 제목 + 한두 줄
+  if (s.points !== undefined && !Array.isArray(s.points)) warn.push(`${p}.points: 목록([...])이 아니어서 비움`);
+  const points = (Array.isArray(s.points) ? s.points : []).slice(0, LIMITS.points)
+    .map((pt, k) => (isObj(pt) ? { label: str(pt.label, LIMITS.pointLabel, `${p}.points[${k}].label`, warn).trim(), text: str(pt.text, LIMITS.point, `${p}.points[${k}].text`, warn).trim() } : null))
+    .filter((pt) => pt && (pt.label || pt.text));
   const items = (Array.isArray(media.items) ? media.items : []).slice(0, 3).map((it, k) => ({
     src: src(it?.src, `${p}.media.items[${k}].src`, warn),
     caption: str(it?.caption, LIMITS.caption, `${p}.media.items[${k}].caption`, warn),
   }));
+  let sandbox = null;
+  if (isObj(s.sandbox)) {
+    const b = s.sandbox, d = defaultSandbox(), q = `${p}.sandbox`;
+    const notes = isObj(b.notes) ? b.notes : {};
+    sandbox = {
+      kind: oneOf(b.kind, SANDBOX_KINDS, 'layout', `${q}.kind`, warn),
+      button: str(b.button, LIMITS.sbxButton, `${q}.button`, warn, d.button) || d.button,
+      title: str(b.title, LIMITS.sbxButton, `${q}.title`, warn, d.title) || d.title,
+      target: oneOf(b.target, SANDBOX_TARGETS, 'rock0', `${q}.target`, warn),
+      command: str(b.command, LIMITS.sbxCommand, `${q}.command`, warn),
+      notes: Object.fromEntries(['command', 'direct', 'text'].map((k) => [k, str(notes[k], LIMITS.sbxNote, `${q}.notes.${k}`, warn)])),
+      boxText: str(b.boxText, LIMITS.sbxButton, `${q}.boxText`, warn),
+    };
+  } else if (s.sandbox !== undefined && s.sandbox !== null) warn.push(`${p}.sandbox: { … }가 아니어서 뺌`);
+  const demoIds = new Set();
+  if (s.demos !== undefined && !Array.isArray(s.demos)) warn.push(`${p}.demos: 목록([...])이 아니어서 비움`);
+  const demos = (Array.isArray(s.demos) ? s.demos : []).slice(0, LIMITS.demos).map((d, k) => sanitizeDemo(d, `${p}.demos[${k}]`, warn, demoIds)).filter(Boolean);
   let action = null;
   if (isObj(s.action)) action = { type: oneOf(s.action.type, ['explore'], 'explore', `${p}.action.type`, warn), label: str(s.action.label, LIMITS.action, `${p}.action.label`, warn, '탐험하러 가기 →') || '탐험하러 가기 →' };
   return {
@@ -154,17 +247,21 @@ function sanitizeSection(s, i, warn, ids) {
     subtitle: str(s.subtitle, LIMITS.subtitle, `${p}.subtitle`, warn),
     body: str(s.body, LIMITS.body, `${p}.body`, warn),
     keywords: kw,
+    points,
     layout: {
       align: oneOf(lay.align, ALIGNS, 'left', `${p}.layout.align`, warn),
       vertical: oneOf(lay.vertical, VERTICALS, 'bottom', `${p}.layout.vertical`, warn),
       maxWidth: number(lay.maxWidth, [240, 900], 440, `${p}.layout.maxWidth`, warn),
+      box: sanitizeBox(lay.box, `${p}.layout.box`, warn),
     },
-    media: { layout: mLayout, items },
+    media: { layout: mLayout, label: str(media.label, LIMITS.mediaLabel, `${p}.media.label`, warn), items, box: sanitizeBox(media.box, `${p}.media.box`, warn, { scale: false }) },
     camera: sanitizeCamera(s.camera, `${p}.camera`, warn),
     cameraMobile: sanitizeCamera(s.cameraMobile ?? null, `${p}.cameraMobile`, warn, { allowNull: true }),
     filter: sanitizeFilter(s.filter, `${p}.filter`, warn, { partial: true }),
     transition: sanitizeTransition(s.transition, `${p}.transition`, warn, { partial: true }),
     action,
+    demos,
+    sandbox,
   };
 }
 
@@ -191,7 +288,7 @@ export function parsePresentation(input) {
     transition: sanitizeTransition(obj.transition, 'transition', warnings),
     explore: {
       washDuration: number(obj.explore?.washDuration, [0.6, 6], d.explore.washDuration, 'explore.washDuration', warnings),
-      streaks: Math.round(number(obj.explore?.streaks, [4, 40], d.explore.streaks, 'explore.streaks', warnings)),
+      streaks: Math.round(number(obj.explore?.streaks, [0, 12], d.explore.streaks, 'explore.streaks', warnings)),
       seed: Math.round(number(obj.explore?.seed, [0, 999], d.explore.seed, 'explore.seed', warnings)),
     },
     ambient: { drift: number(obj.ambient?.drift, [0, 2], d.ambient.drift, 'ambient.drift', warnings) },

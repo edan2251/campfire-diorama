@@ -221,8 +221,25 @@ export function createEditor(root, initial, app) {
     el('div', { class: 'edit-tabs', role: 'tablist' }, tabScene, tabIntro),
     msgBox, editBox, testBox, introBox);
   root.append(panel);
+  // 화면 나누기 (U-19): 왼쪽 = 패널, 오른쪽 = 실제 화면. 실제 화면은 창과 같은 가로세로 비율로 줄여 보여 줌(방문자가 보는 구도·글 크기 그대로, 위아래 여백).
+  // 패널을 접으면 화면 전체. 재생 중·좁은 창(900px 미만)은 나누지 않음 (editor.css)
+  document.body.classList.add('edit-split');
+  const setSplit = () => {
+    const w = panel.classList.contains('collapsed') ? 0 : Math.round(panel.getBoundingClientRect().right + 12);
+    const sc = Math.max(0.3, (innerWidth - w) / innerWidth);
+    const st = document.documentElement.style;
+    st.setProperty('--edit-w', `${w}px`);
+    st.setProperty('--edit-s', sc.toFixed(4));
+    st.setProperty('--edit-top', `${Math.round(((1 - sc) * innerHeight) / 2)}px`);
+  };
+  new ResizeObserver(setSplit).observe(panel);
+  addEventListener('resize', setSplit);
+  link.addEventListener('load', setSplit);                            // 편집기 CSS가 늦게 오면 처음 잰 패널 폭(전체 폭)이 틀림
+  new MutationObserver(setSplit).observe(panel, { attributes: true, attributeFilter: ['class'] });
+  setSplit();
   const intro = app.presentation ? createIntroEditor(introBox, {
     presentation: app.presentation, store: app.store, rig: app.rig, initial: app.presentationConfig, toast: app.toast,
+    presentRoot: app.presentRoot, project: app.project,
     setPlaying: (v) => document.body.classList.toggle('intro-playing', v),
   }) : null;
   if (!intro) tabIntro.disabled = true;
@@ -548,6 +565,7 @@ export function createEditor(root, initial, app) {
     tap(x, y) { if (!api.active || tc.axis) return; select(pickUnit(x, y)); },
     /** 매 프레임: 표시·이름표 */
     update() {
+      intro?.update();
       const show = api.active;
       helpers.visible = show;
       toolbar.hidden = !show;

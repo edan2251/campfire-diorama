@@ -17,6 +17,7 @@ export const SCHEMA = {
     fire: { base: num(1.0, 0, 1.5), flicker: num(0.3, 0, 1), sparks: num(0.5, 0, 1), smoke: num(0.4, 0, 1) },
     stars: { intensity: num(0.6, 0, 1), twinkle: num(0.35, 0, 1) },
     aurora: { on: bool(false), intensity: num(0.25, 0, 1), speed: num(0.3, 0, 1) },
+    meteors: { on: bool(true), rate: num(0.4, 0, 1) },          // 유성우 (U-19): 가끔 비스듬히 지나가는 반짝이는 별똥별, rate = 빈도
     rain: { on: bool(false), duration: oneOf(30, [30, 60, 'loop']), intensity: num(0.35, 0, 1) },
     wind: num(0.2, 0, 1),
     weatherLink: bool(true),

@@ -45,7 +45,7 @@ uniform float uRim, uRimPow, uFill, uKey;`)
   m.needsUpdate = true;
 }
 
-export async function loadCharacter(url, { walkSpeedRef = 0.85 } = {}) {
+export async function loadCharacter(url, { walkSpeedRef = 0.85, clipTime = null } = {}) {   // clipTime(name, 상태 시간, 클립 길이) → 클립 안 시간 (U-20 앉기·일어나기 빠르게)
   const gltf = await new GLTFLoader().loadAsync(url);
   const root = new THREE.Group();
   root.name = 'character_root';
@@ -66,13 +66,14 @@ export async function loadCharacter(url, { walkSpeedRef = 0.85 } = {}) {
     return actions[name] ? name : 'Idle_Stand';
   }
 
-  function play(name, clipTime) {
+  const onceTime = (name, t, dur) => (clipTime ? clipTime(name, t, dur) : Math.min(t, dur));
+  function play(name, t) {
     const next = actions[name];
     const fade = (LOCO.has(name) && LOCO.has(curName)) || name === 'Walk' || curName === 'Walk' ? 0.25 : 0.12;   // 걷기 자세에서 앉기로 넘어갈 때도 부드럽게
     next.enabled = true;
     next.reset();
     next.setEffectiveWeight(1);
-    if (ONCE.has(name)) { next.setLoop(THREE.LoopOnce, 1); next.clampWhenFinished = true; next.time = Math.min(clipTime, next.getClip().duration); }
+    if (ONCE.has(name)) { next.setLoop(THREE.LoopOnce, 1); next.clampWhenFinished = true; next.time = onceTime(name, t, next.getClip().duration); }
     else next.setLoop(THREE.LoopRepeat, Infinity);
     next.play();
     if (cur && cur !== next) cur.crossFadeTo(next, fade, false);
@@ -88,7 +89,7 @@ export async function loadCharacter(url, { walkSpeedRef = 0.85 } = {}) {
       root.rotation.y = ctrl.yaw;
       const name = resolve(ctrl.clip);
       if (ctrl.transitionId !== lastId || name !== curName) { play(name, ctrl.clipTime); lastId = ctrl.transitionId; }
-      if (ONCE.has(name) && cur) cur.time = Math.min(ctrl.clipTime, cur.getClip().duration);   // 컨트롤러 시간과 어긋나지 않게
+      if (ONCE.has(name) && cur) cur.time = onceTime(name, ctrl.clipTime, cur.getClip().duration);   // 컨트롤러 시간과 어긋나지 않게 (재생 곡선 적용)
       // 걷기 재생 속도 = 실제 루트 이동 속도 / 클립 기준 속도 (출발 직후 크게 돌며 천천히 움직일 때 발이 미끄러지지 않게, D-01)
       if (name === 'Walk' && cur && dt > 0 && lastPos) {
         const v = Math.hypot(ctrl.pos[0] - lastPos[0], ctrl.pos[1] - lastPos[1]) / dt;

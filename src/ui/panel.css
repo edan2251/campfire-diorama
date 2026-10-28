@@ -103,3 +103,17 @@ body.ui-hidden #uiHint { display: block; }
   .panel-body { overflow: visible; }
   .tabs { position: sticky; top: 0; background: var(--panel); z-index: 1; }
 }
+/* 관리자 편집 모드 (U-18): 설정 패널 맨 아래 작은 버튼 + 번호 창 */
+.panel-foot .admin-open { justify-self: end; font-size: 11.5px; color: var(--muted); background: none; border: 0; padding: 2px 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.panel-foot .admin-open:hover { color: var(--ink); }
+.admin-pin { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 16px; background: rgba(4, 6, 14, 0.55); backdrop-filter: blur(3px); }
+.admin-box { width: min(320px, 100%); display: grid; gap: 10px; padding: 18px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); box-shadow: 0 10px 34px rgba(0, 0, 0, 0.45); }
+.admin-box strong { font-size: 15px; }
+.admin-desc { margin: 0; font-size: 12.5px; color: var(--muted); }
+.admin-box input { font: 600 18px/1 inherit; letter-spacing: 0.3em; text-align: center; padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.06); color: var(--ink); }
+.admin-box input:focus { outline: none; border-color: var(--accent); }
+.admin-msg { margin: 0; min-height: 1.3em; font-size: 12.5px; color: #f0c58f; }
+.admin-row { display: flex; justify-content: flex-end; gap: 8px; }
+.admin-row button { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.06); color: var(--ink); cursor: pointer; }
+.admin-row button.accent { border-color: var(--accent); color: var(--accent); }
+.admin-row button.ghost { background: none; color: var(--muted); }

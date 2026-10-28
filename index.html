@@ -25,7 +25,7 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   :root { --bg: #070a17; --ink: #f3e9df; --muted: #b8aca4; --panel: rgba(18, 20, 34, 0.86); --line: rgba(255, 255, 255, 0.12); --accent: #f0a35a; }
-  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 14px/1.5 "Malgun Gothic", system-ui, sans-serif; overflow: hidden; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 14px/1.5 "Paperlogy", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif; overflow: hidden; }
   #stage { position: fixed; inset: 0; }
   #stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
   #toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); padding: 7px 14px; border-radius: 999px; background: var(--panel); color: var(--ink); font-size: 13px; pointer-events: none; z-index: 40; }
@@ -51,12 +51,10 @@
   @keyframes bootPulse { 50% { opacity: 0.3; } }
   @media (prefers-reduced-motion: reduce) { #bootStep::before { animation: none; } #boot { transition: none; } }
 </style>
+<!-- 글꼴: Paperlogy (SIL OFL 1.1, fonts/OFL.txt) — 모양이 있는 글자만 쓰고 나머지는 맑은 고딕 (fonts/paperlogy.css, tools/make_font_css.py) -->
+<link rel="preload" href="fonts/Paperlogy-4Regular.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="stylesheet" href="fonts/paperlogy.css">
 <link rel="stylesheet" href="src/ui/panel.css">
-<!-- 인트로 글꼴 (OFL): 제목 Gowun Batang(Google Fonts), 본문 Pretendard(jsdelivr). 못 받으면 시스템 글꼴 -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="src/present/present.css">
 <script type="importmap">
 { "imports": {

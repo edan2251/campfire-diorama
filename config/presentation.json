@@ -10,8 +10,8 @@
     "inputLock": 0.25
   },
   "explore": {
-    "washDuration": 2.2,
-    "streaks": 16,
+    "washDuration": 2.6,
+    "streaks": 5,
     "seed": 7
   },
   "ambient": {
@@ -40,14 +40,18 @@
       "subtitle": "AI 콘텐츠 × 바이브코딩 · Interactive 3D Web Diorama",
       "body": "별빛 아래 떠 있는 작은 섬, 모닥불 곁에서 잠시 쉬어 가는 밤을 웹 위에 지었습니다.",
       "keywords": [],
+      "points": [],
       "layout": {
         "align": "left",
         "vertical": "bottom",
-        "maxWidth": 440
+        "maxWidth": 440,
+        "box": null
       },
       "media": {
         "layout": "none",
-        "items": []
+        "label": "",
+        "items": [],
+        "box": null
       },
       "camera": {
         "azimuth": 17,
@@ -70,45 +74,62 @@
           -0.1,
           0,
           0.6
-        ]
+        ],
+        "dof": null
       },
       "filter": {},
       "transition": {},
-      "action": null
+      "action": null,
+      "demos": [],
+      "sandbox": null
     },
     {
       "id": "concept",
       "hidden": false,
       "label": "CONCEPT",
-      "title": "조용히 쉬어가는 작은 공간",
+      "title": "모닥불 곁에 머무는 밤",
       "subtitle": "",
-      "body": "아마자라시의 보컬 아키타 히로무를 모티브로 한 캐릭터와\n고요한 밤의 휴식 공간을 제작했습니다.",
+      "body": "밴드 amazarashi의 프론트맨에서 영감을 받은 캐릭터가 \n쉬어 가는 공간입니다. 차가운 밤하늘과 따뜻한 모닥불빛으로 고요한 휴식의 분위기를 표현했습니다.",
       "keywords": [
         "밤",
         "모닥불",
         "휴식",
         "미니어처"
       ],
+      "points": [],
       "layout": {
         "align": "left",
         "vertical": "bottom",
-        "maxWidth": 440
+        "maxWidth": 440,
+        "box": null
       },
       "media": {
         "layout": "none",
-        "items": []
+        "label": "",
+        "items": [],
+        "box": null
       },
       "camera": {
-        "azimuth": 25,
-        "elevation": 19,
-        "distance": 5,
-        "lens": 40,
+        "azimuth": 13.07,
+        "elevation": 1.71,
+        "distance": 8.107,
+        "lens": 85,
         "target": [
-          -1.25,
-          0.4,
-          -0.35
+          -0.715,
+          0.638,
+          -0.485
         ],
-        "dof": null
+        "dof": {
+          "on": true,
+          "focus": "point",
+          "fstop": 2.8,
+          "maxBlur": 0.5,
+          "point": [
+            0.086,
+            0.203,
+            0.088
+          ]
+        }
       },
       "cameraMobile": {
         "azimuth": 15,
@@ -119,41 +140,57 @@
           -0.15,
           0,
           0.2
-        ]
+        ],
+        "dof": null
       },
       "filter": {},
       "transition": {},
-      "action": null
+      "action": null,
+      "demos": [],
+      "sandbox": null
     },
     {
       "id": "ai-content",
       "hidden": false,
       "label": "AI CONTENT",
-      "title": "From Image to 3D",
+      "title": "이미지에서 3D 장면으로",
       "subtitle": "",
-      "body": "2D 이미지로 장면과 오브젝트의 형태를 먼저 정의하고,\n이미지를 기준으로 개별 3D 에셋을 제작했습니다.",
+      "body": "2D 이미지로 소품의 형태와 분위기를 정한 뒤,\n 이를 기준으로 3D 에셋을 제작해 장면에 배치했습니다.",
       "keywords": [],
+      "points": [],
       "layout": {
         "align": "right",
         "vertical": "bottom",
-        "maxWidth": 520
+        "maxWidth": 520,
+        "box": {
+          "x": 69.14,
+          "y": 51.41,
+          "w": 25.39,
+          "scale": 1
+        }
       },
       "media": {
         "layout": "cards",
+        "label": "",
         "items": [
           {
             "src": "presentation/tent_2d_reference.jpg",
-            "caption": "2D Reference"
+            "caption": "2D 기준 이미지"
           },
           {
             "src": "presentation/tent_3d_generation.jpg",
-            "caption": "3D Generation"
+            "caption": "3D 생성 결과"
           },
           {
             "src": "presentation/tent_final_asset.jpg",
-            "caption": "Final Asset"
+            "caption": "최종 적용 모습"
           }
-        ]
+        ],
+        "box": {
+          "x": 69.14,
+          "y": 76.99,
+          "w": 25.39
+        }
       },
       "camera": {
         "azimuth": 20,
@@ -161,11 +198,21 @@
         "distance": 5.4,
         "lens": 40,
         "target": [
-          -1.6,
-          0.5,
-          -0.95
+          -1.323,
+          0.462,
+          -1.039
         ],
-        "dof": null
+        "dof": {
+          "on": true,
+          "focus": "point",
+          "fstop": 7.9,
+          "maxBlur": 0.5,
+          "point": [
+            -1.125,
+            0.648,
+            -0.515
+          ]
+        }
       },
       "cameraMobile": {
         "azimuth": 20,
@@ -176,33 +223,40 @@
           -1.2,
           0,
           -0.45
-        ]
+        ],
+        "dof": null
       },
       "filter": {},
       "transition": {},
-      "action": null
+      "action": null,
+      "demos": [],
+      "sandbox": null
     },
     {
       "id": "vibe-coding",
       "hidden": false,
       "label": "VIBE CODING",
-      "title": "From Static to Alive",
+      "title": "생동감 있는 \n작은 디오라마",
       "subtitle": "",
-      "body": "생성된 장면을 그대로 쓰지 않고\n이동·애니메이션·날씨·조명·카메라 기능을 추가하고 다듬었습니다.",
-      "keywords": [
-        "Click to Walk",
-        "Rest by the Log",
-        "Dynamic Weather",
-        "Photo Mode"
-      ],
+      "body": "생성한 3D 소품으로 웹 공간을 구성하고, \n캐릭터의 이동과 휴식, 날씨와 카메라 연출을 구현했습니다.",
+      "keywords": [],
+      "points": [],
       "layout": {
         "align": "left",
         "vertical": "top",
-        "maxWidth": 460
+        "maxWidth": 460,
+        "box": {
+          "x": 3.71,
+          "y": 9.74,
+          "w": 22.46,
+          "scale": 1
+        }
       },
       "media": {
         "layout": "none",
-        "items": []
+        "label": "",
+        "items": [],
+        "box": null
       },
       "camera": {
         "azimuth": 58,
@@ -225,11 +279,408 @@
           0.25,
           0,
           -0.2
-        ]
+        ],
+        "dof": null
       },
       "filter": {},
       "transition": {},
-      "action": null
+      "action": null,
+      "demos": [
+        {
+          "id": "walk",
+          "label": "걸어가기 · 쉬기",
+          "tag": "Click to Walk · Rest",
+          "note": "땅을 누르면 그곳으로 걸어가고, 통나무를 누르면 돌아와 등을 기대고 앉아요.",
+          "noteTo": "",
+          "act": "walk",
+          "camera": {
+            "azimuth": -4,
+            "elevation": 24,
+            "distance": 6,
+            "lens": 40,
+            "target": [
+              1.05,
+              0.35,
+              -0.4
+            ],
+            "dof": null
+          },
+          "cameraMobile": null,
+          "scene": {},
+          "walkTo": [
+            1.45,
+            0.35
+          ],
+          "focusTo": null,
+          "period": 3.5
+        },
+        {
+          "id": "fire",
+          "label": "모닥불",
+          "tag": "Campfire",
+          "note": "불꽃·불티·연기와 주변을 비추는 불빛이 함께 흔들려요.",
+          "noteTo": "",
+          "act": "none",
+          "camera": {
+            "azimuth": 20,
+            "elevation": 12,
+            "distance": 3.6,
+            "lens": 50,
+            "target": [
+              -0.1,
+              0.35,
+              0
+            ],
+            "dof": {
+              "on": true,
+              "focus": "fire",
+              "fstop": 3.5,
+              "maxBlur": 0.45
+            }
+          },
+          "cameraMobile": null,
+          "scene": {
+            "fire.base": 1.5,
+            "fire.sparks": 1,
+            "fire.smoke": 0.7,
+            "wind": 0.35
+          },
+          "walkTo": null,
+          "focusTo": null,
+          "period": 3.5
+        },
+        {
+          "id": "aurora",
+          "label": "오로라",
+          "tag": "Aurora",
+          "note": "밤하늘에 오로라가 천천히 번지고 별이 반짝여요.",
+          "noteTo": "",
+          "act": "none",
+          "camera": {
+            "azimuth": 17,
+            "elevation": 6,
+            "distance": 8,
+            "lens": 30,
+            "target": [
+              0,
+              1.3,
+              -0.4
+            ],
+            "dof": null
+          },
+          "cameraMobile": null,
+          "scene": {
+            "aurora.on": true,
+            "aurora.intensity": 0.7,
+            "aurora.speed": 0.4,
+            "stars.intensity": 0.9
+          },
+          "walkTo": null,
+          "focusTo": null,
+          "period": 3.5
+        },
+        {
+          "id": "meteors",
+          "label": "유성우",
+          "tag": "Shooting Stars",
+          "note": "반짝이는 별똥별이 가끔 하늘을 비스듬히 가로질러요. 지금은 자주 떨어지게 해 두었어요.",
+          "noteTo": "",
+          "act": "none",
+          "camera": {
+            "azimuth": -30,
+            "elevation": 5,
+            "distance": 8,
+            "lens": 30,
+            "target": [
+              0,
+              1.4,
+              -0.4
+            ],
+            "dof": null
+          },
+          "cameraMobile": null,
+          "scene": {
+            "meteors.on": true,
+            "meteors.rate": 1
+          },
+          "walkTo": null,
+          "focusTo": null,
+          "period": 3.5
+        },
+        {
+          "id": "rain",
+          "label": "비 내리기",
+          "tag": "Dynamic Weather",
+          "note": "비가 내리기 시작하면 모닥불이 몇 초 만에 꺼지고, 땅과 물건이 젖어 반짝여요.",
+          "noteTo": "",
+          "act": "none",
+          "camera": {
+            "azimuth": 30,
+            "elevation": 13,
+            "distance": 4.4,
+            "lens": 40,
+            "target": [
+              0,
+              0.5,
+              -0.75
+            ],
+            "dof": null
+          },
+          "cameraMobile": null,
+          "scene": {
+            "rain.on": true,
+            "rain.intensity": 0.65,
+            "wind": 0.3
+          },
+          "walkTo": null,
+          "focusTo": null,
+          "period": 3.5
+        },
+        {
+          "id": "focus",
+          "label": "카메라 심도",
+          "tag": "Depth of Field",
+          "note": "초점 기타 · f/2.8 — 조리개를 열면 앞뒤가 크게 흐려져요.",
+          "noteTo": "초점 캐릭터 · f/8.0 — 조리개를 조이면 더 넓은 범위가 또렷해요.",
+          "act": "focus",
+          "camera": {
+            "azimuth": 80,
+            "elevation": 4,
+            "distance": 7.2,
+            "lens": 85,
+            "target": [
+              -0.45,
+              0.5,
+              -0.6
+            ],
+            "dof": {
+              "on": true,
+              "focus": "point",
+              "fstop": 2.8,
+              "maxBlur": 0.7,
+              "point": [
+                -0.5,
+                0.2,
+                -0.98
+              ]
+            }
+          },
+          "cameraMobile": null,
+          "scene": {},
+          "walkTo": null,
+          "focusTo": {
+            "on": true,
+            "focus": "character",
+            "fstop": 8,
+            "maxBlur": 0.7
+          },
+          "period": 3.5
+        }
+      ],
+      "sandbox": null
+    },
+    {
+      "id": "challenge-layout",
+      "hidden": false,
+      "label": "CHALLENGE 01",
+      "title": "직접 고치는 편집기",
+      "subtitle": "어려움과 해결 · 1 / 2",
+      "body": "오른쪽 패널에서 두 방식을 직접 비교해 보세요.",
+      "keywords": [],
+      "points": [
+        {
+          "label": "문제",
+          "text": "3D 오브젝트와 인트로 텍스트를 원하는 위치에 직접 배치하기 어려웠어요."
+        },
+        {
+          "label": "해결",
+          "text": "씬은 Unity처럼, 텍스트·이미지 배치는 PowerPoint처럼 조작하는 편집 기능을 만들었어요."
+        },
+        {
+          "label": "결과",
+          "text": "화면을 보며 위치와 크기를 직접 조절하고, 수정 결과를 바로 확인할 수 있게 되었습니다."
+        }
+      ],
+      "layout": {
+        "align": "left",
+        "vertical": "top",
+        "maxWidth": 420,
+        "box": {
+          "x": 3.71,
+          "y": 9.74,
+          "w": 20.51,
+          "scale": 1
+        }
+      },
+      "media": {
+        "layout": "none",
+        "label": "",
+        "items": [],
+        "box": null
+      },
+      "camera": {
+        "azimuth": 20,
+        "elevation": 24,
+        "distance": 4.6,
+        "lens": 40,
+        "target": [
+          -1.6,
+          0.3,
+          0.9
+        ],
+        "dof": null
+      },
+      "cameraMobile": {
+        "azimuth": 28,
+        "elevation": 26,
+        "distance": 4.2,
+        "lens": 35,
+        "target": [
+          -2.3,
+          0.1,
+          1.2
+        ],
+        "dof": null
+      },
+      "filter": {},
+      "transition": {},
+      "action": null,
+      "demos": [],
+      "sandbox": {
+        "kind": "layout",
+        "button": "직접 해 보기",
+        "title": "직접 해 보기",
+        "target": "rock0",
+        "command": "바위 1을 오른쪽으로 0.6만큼 옮기고 Y축으로 45도 돌려 줘",
+        "notes": {
+          "command": "원하는 자리가 나올 때까지 숫자를 바꿔 몇 번이고 다시 말해야 했어요. 직접 숫자를 바꿔 실행해 보세요.",
+          "direct": "편집 모드처럼 화살표를 끌어 옮기고, 고리로 돌리고, 크기를 바꿔 보세요. 물체를 클릭하면 골라져요.",
+          "text": "글 상자를 만들어 끌어 놓고, 모서리로 크기를 바꾸고, 두 번 눌러 글을 고쳐 보세요."
+        },
+        "boxText": "여기에 글을 써 보세요"
+      }
+    },
+    {
+      "id": "challenge-motion",
+      "hidden": false,
+      "label": "CHALLENGE 02",
+      "title": "캐릭터에 맞는 동작 찾기",
+      "subtitle": "어려움과 해결 · 2 / 2",
+      "body": "",
+      "keywords": [],
+      "points": [
+        {
+          "label": "문제",
+          "text": "AI 애니메이션이 캐릭터의 비현실적인 신체 비율과 어울리지 않아 이질감이 있었어요."
+        },
+        {
+          "label": "해결",
+          "text": "여러 동작 시안을 생성하고 비교·선별한 뒤 반복적으로 다듬었어요."
+        },
+        {
+          "label": "결과",
+          "text": "여러 시안을 다듬어 통나무에 등을 기대어 앉는 동작으로 정리했습니다."
+        }
+      ],
+      "layout": {
+        "align": "left",
+        "vertical": "top",
+        "maxWidth": 440,
+        "box": {
+          "x": 4.4,
+          "y": 10,
+          "w": 38,
+          "scale": 0.9
+        }
+      },
+      "media": {
+        "layout": "compare",
+        "label": "[초기 동작과 최종 동작 비교]",
+        "items": [
+          {
+            "src": "presentation/anim_ai_preset_sit_side.jpg",
+            "caption": "초기 시안 · AI 프리셋 \"앉기\""
+          },
+          {
+            "src": "presentation/anim_final_ground_sit_side.jpg",
+            "caption": "최종 · 통나무에 기대 바닥에 앉기"
+          }
+        ],
+        "box": {
+          "x": 4.4,
+          "y": 56,
+          "w": 48
+        }
+      },
+      "camera": {
+        "azimuth": -112,
+        "elevation": 9,
+        "distance": 3.8,
+        "lens": 45,
+        "target": [
+          1.1,
+          0.38,
+          -1.85
+        ],
+        "dof": null
+      },
+      "cameraMobile": {
+        "azimuth": -135,
+        "elevation": 12,
+        "distance": 3.5,
+        "lens": 40,
+        "target": [
+          0.6,
+          0,
+          -1.05
+        ],
+        "dof": null
+      },
+      "filter": {},
+      "transition": {},
+      "action": null,
+      "demos": [
+        {
+          "id": "final-motion",
+          "label": "최종 동작 보기",
+          "tag": "Live in Scene",
+          "note": "실제 장면의 캐릭터가 일어났다가 통나무에 등을 기대 다시 앉아요.",
+          "noteTo": "",
+          "act": "walk",
+          "camera": {
+            "azimuth": -112,
+            "elevation": 9,
+            "distance": 3.8,
+            "lens": 45,
+            "target": [
+              1.1,
+              0.38,
+              -1.85
+            ],
+            "dof": null
+          },
+          "cameraMobile": {
+            "azimuth": -135,
+            "elevation": 12,
+            "distance": 3.5,
+            "lens": 40,
+            "target": [
+              0.6,
+              0,
+              -1.05
+            ],
+            "dof": null
+          },
+          "scene": {},
+          "walkTo": [
+            0.45,
+            -0.7
+          ],
+          "focusTo": null,
+          "period": 3.5
+        }
+      ],
+      "sandbox": null
     },
     {
       "id": "explore",
@@ -239,14 +690,18 @@
       "subtitle": "",
       "body": "",
       "keywords": [],
+      "points": [],
       "layout": {
         "align": "center",
         "vertical": "bottom",
-        "maxWidth": 560
+        "maxWidth": 560,
+        "box": null
       },
       "media": {
         "layout": "none",
-        "items": []
+        "label": "",
+        "items": [],
+        "box": null
       },
       "camera": {
         "azimuth": 17,
@@ -269,17 +724,20 @@
           -0.1,
           0,
           0.6
-        ]
+        ],
+        "dof": null
       },
       "filter": {},
       "transition": {},
       "action": {
         "type": "explore",
         "label": "탐험하러 가기 →"
-      }
+      },
+      "demos": [],
+      "sandbox": null
     }
   ],
   "note": "인트로(Presentation Mode) 설정. 편집: 로컬 서버 /web/?edit → '인트로 편집' 탭. 직접 고쳐도 됨 (잘못된 값은 읽을 때 기본값으로, 저장은 거부). 안내: docs/PRESENTATION_EDITOR_GUIDE.md",
-  "saved_at": "2026-10-28T15:33:07.635Z",
+  "saved_at": "2026-10-28T21:26:12.160Z",
   "saved_by": "intro-editor"
 }

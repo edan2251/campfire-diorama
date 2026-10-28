@@ -58,21 +58,27 @@ export function createRain({ duration = 30 } = {}) {
 }
 
 // 불 감쇠: 실제 불 = 사용자 기본 세기 × weather × 작은 일렁임(렌더 쪽).
-// weather 목표 = 1 − 0.7 × 비 존재량 → 비가 내리는 동안 약 30%(25–35% 범위). 약해질 때 빠르게(8초), 회복은 천천히(40초).
-export const FIRE_DROP_TAU = 8;
+// 비가 오는 동안(켠 순간부터) 불이 빠르게 사그라들어 FIRE_OUT_TIME 안에 완전히 꺼짐 (U-18: "비가 내리기 시작한 후 5초 내로 전부").
+//   처음엔 빨리 줄고 끝(숯)만 조금 느리게: dW/dt = −(a + W)/k → 1에서 0까지 k·ln((a+1)/a) ≈ 4.3초.
+// 비가 그치면(끈 뒤) 남은 비 만큼을 뺀 목표로 수십 초에 걸쳐 천천히 다시 살아남(40초 시간상수).
+export const FIRE_OUT_TIME = 4.3;
+export const FIRE_DROP = { a: 0.15, k: 2.1 };
 export const FIRE_RECOVER_TAU = 40;
-export const FIRE_RAIN_FLOOR = 0.3;
 
 export function createFireWeather() {
   let weather = 1;
   return {
     get weather() { return weather; },
-    target(rainLevel) { return 1 - (1 - FIRE_RAIN_FLOOR) * Math.min(Math.max(rainLevel, 0), 1); },
-    update(dt, rainLevel) {
+    target(rainLevel) { return 1 - Math.min(Math.max(rainLevel, 0), 1); },
+    /** rainOn = 비가 켜져 있음(내리기 시작 포함). 주지 않으면 비 존재량이 있을 때 켜진 것으로 */
+    update(dt, rainLevel, rainOn = rainLevel > 0) {
       if (!(dt > 0)) return weather;
+      if (rainOn) {
+        weather = Math.max(0, weather - ((FIRE_DROP.a + weather) / FIRE_DROP.k) * dt);
+        return weather;
+      }
       const t = this.target(rainLevel);
-      const tau = t < weather ? FIRE_DROP_TAU : FIRE_RECOVER_TAU;
-      weather += (t - weather) * (1 - Math.exp(-dt / tau));
+      if (t > weather) weather += (t - weather) * (1 - Math.exp(-dt / FIRE_RECOVER_TAU));
       return weather;
     },
     reset() { weather = 1; },

@@ -19,14 +19,19 @@ void main() {
 const STAR_VS = /* glsl */ `
 attribute float aMag, aTw, aSeed;
 uniform float uTime, uIntensity, uTwinkle, uPx;
+uniform vec4 uExcite[6];                         // 유성우(U-20): 별똥별 머리 방향(xyz) · 세기(w) — 근처 별이 잠깐 반짝
 varying float vB;
 void main() {
   float tw = aTw > 0.5 ? 1.0 + uTwinkle * 0.45 * sin(uTime * (0.6 + aSeed * 1.2) + aSeed * 60.0) : 1.0;
-  vB = (0.18 + 0.82 * aMag) * uIntensity * tw;
+  vec3 sd = normalize(position);
+  float ex = 0.0;
+  for (int i = 0; i < 6; i++) ex += uExcite[i].w * smoothstep(0.9925, 0.9995, dot(sd, uExcite[i].xyz));
+  ex = min(ex, 2.0) * (0.6 + 0.4 * sin(uTime * 25.0 + aSeed * 40.0));
+  vB = (0.18 + 0.82 * aMag) * uIntensity * tw * (1.0 + ex * 2.2);
   vec4 mv = modelViewMatrix * vec4(position, 1.0);
   gl_Position = projectionMatrix * mv;
   gl_Position.z = gl_Position.w * 0.99999;      // 항상 가장 먼 곳
-  gl_PointSize = (1.1 + 2.4 * aMag) * uPx;
+  gl_PointSize = (1.1 + 2.4 * aMag) * uPx * (1.0 + ex * 0.6);
 }`;
 const STAR_FS = /* glsl */ `
 varying float vB;
@@ -128,7 +133,7 @@ export function createSky({ quality = 'high', seed = 7 } = {}) {
   sg.setAttribute('aTw', new THREE.BufferAttribute(tw, 1));
   sg.setAttribute('aSeed', new THREE.BufferAttribute(sd, 1));
   sg.setDrawRange(0, Q.stars);
-  const starU = { uTime: { value: 0 }, uIntensity: { value: 0.6 }, uTwinkle: { value: 0.35 }, uPx: { value: 1 } };
+  const starU = { uTime: { value: 0 }, uIntensity: { value: 0.6 }, uTwinkle: { value: 0.35 }, uPx: { value: 1 }, uExcite: { value: Array.from({ length: 6 }, () => new THREE.Vector4()) } };
   const stars = new THREE.Points(sg, new THREE.ShaderMaterial({ vertexShader: STAR_VS, fragmentShader: STAR_FS, uniforms: starU, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
   stars.frustumCulled = false;
   stars.renderOrder = -9;
@@ -156,6 +161,8 @@ export function createSky({ quality = 'high', seed = 7 } = {}) {
       applyRibbons();
     },
     setPixelRatio(pr) { starU.uPx.value = pr; },
+    /** 유성우: 근처 별 반짝임 [{ dir(카메라에서 본 방향), w }] — 최대 6개 */
+    setExcite(list) { starU.uExcite.value.forEach((v4, i) => { const e = list[i]; if (e) v4.set(e.dir.x, e.dir.y, e.dir.z, e.w); else v4.set(0, 1, 0, 0); }); },
     /** level = 오로라 실제 양(페이드 보간 결과), intensity·speed = 사용자 설정 */
     update(time, { starIntensity = 0.6, twinkle = 0.35, auroraLevel = 0, auroraIntensity = 0.25, auroraSpeed = 0.3 } = {}) {
       starU.uTime.value = time;

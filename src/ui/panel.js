@@ -13,10 +13,10 @@ const SEG = (path, label, options) => ({ t: 'seg', path, label, options });
 
 const TABS = [
   { id: 'scene', label: '장면',
-    basic: [RANGE('scene.fire.base', '불 세기', 0, 1.5, 0.05), RANGE('scene.stars.intensity', '별 밝기', 0, 1, 0.05, pct), TOGGLE('scene.aurora.on', '오로라'),
+    basic: [RANGE('scene.fire.base', '불 세기', 0, 1.5, 0.05), RANGE('scene.stars.intensity', '별 밝기', 0, 1, 0.05, pct), TOGGLE('scene.aurora.on', '오로라'), TOGGLE('scene.meteors.on', '유성우'),
       TOGGLE('scene.rain.on', '비'), SEG('scene.rain.duration', '비 시간', [[30, '30초'], [60, '60초'], ['loop', '연속']]), { t: 'status', id: 'rain' }],
     adv: [RANGE('scene.fire.flicker', '불 일렁임', 0, 1, 0.05, pct), RANGE('scene.fire.sparks', '불티', 0, 1, 0.05, pct), RANGE('scene.fire.smoke', '연기', 0, 1, 0.05, pct),
-      RANGE('scene.aurora.intensity', '오로라 세기', 0, 1, 0.05, pct), RANGE('scene.aurora.speed', '오로라 속도', 0, 1, 0.05, pct), RANGE('scene.rain.intensity', '비 세기', 0, 1, 0.05, pct),
+      RANGE('scene.aurora.intensity', '오로라 세기', 0, 1, 0.05, pct), RANGE('scene.aurora.speed', '오로라 속도', 0, 1, 0.05, pct), RANGE('scene.meteors.rate', '유성우 빈도', 0, 1, 0.05, pct), RANGE('scene.rain.intensity', '비 세기', 0, 1, 0.05, pct),
       RANGE('scene.wind', '약한 바람', 0, 1, 0.05, pct), TOGGLE('scene.weatherLink', '날씨와 하늘 연동')] },
   { id: 'camera', label: '카메라',
     basic: [{ t: 'mode' }, RANGE('camera.lens', '렌즈 (mm)', 24, 85, 1, (v) => `${Math.round(v)}`), RANGE('camera.distance', '카메라 거리 (H)', 3.5, 16, 0.1, (v) => v.toFixed(1)),
@@ -184,6 +184,9 @@ export function createPanel(root, store, app) {
       h.replay ? el('button', { type: 'button', class: 'ghost', onclick: () => h.replay() }, '인트로 다시 보기') : null);
     introRow.hidden = false;
   }
+
+  // 관리자 편집 모드 (U-18): 번호를 아는 사람만 (확인은 main.js가 넘긴 openEdit — ui/admin.js)
+  if (app.openEdit) foot.append(el('button', { type: 'button', class: 'admin-open', title: '배치·인트로를 고치는 편집 모드 (관리자 번호 필요)', onclick: () => app.openEdit() }, '관리자 편집 모드'));
 
   function refresh() { for (const r of refreshers) r(); }
   store.subscribe(() => refresh());

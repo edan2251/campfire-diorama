@@ -16,6 +16,8 @@ import { createRain as createRainState, createFireWeather, fireActual, createWet
 import { createWetSurfaces } from './fx/wetness.js';
 import { createFire, flicker, FIRE_QUALITY } from './fx/fire.js';
 import { createSky } from './fx/sky.js';
+import { createMeteors } from './fx/meteors.js';
+import { playSeconds, clipTimeAt } from './logic/clip_timing.js';
 import { createRain, markOccluder } from './fx/rain.js';
 import { createPost, H_MM } from './render/post.js';
 import { buildTempScene } from './scene/temp_scene.js';
@@ -27,6 +29,10 @@ import { createPanel } from './ui/panel.js';
 import { createHud } from './ui/hud.js';
 import { parsePresentation, defaultPresentation } from './logic/presentation_model.js';
 import { createPresentation } from './present/presentation.js';
+import { createSandbox } from './present/sandbox.js';
+import { adminUnlocked, askAdminPin, editUrl } from './ui/admin.js';
+import { SANDBOX_TARGETS } from './logic/presentation_model.js';
+import { unitsOf } from './logic/layout_model.js';
 
 const $ = (id) => document.getElementById(id);
 const stage = $('stage');
@@ -53,6 +59,11 @@ function webglAvailable() {
 }
 
 try {
+  // 편집 모드(?edit)는 관리자 번호를 아는 사람만 (U-18). 틀리거나 취소하면 감상 화면으로 — 브라우저 안 확인이라 한계는 logic/admin_pin.js 머리말
+  if (EDIT && !adminUnlocked()) {
+    boot.step('관리자 번호를 기다리는 중…');
+    if (!(await askAdminPin({ cancelLabel: '감상 화면으로' }))) { location.replace(location.pathname); await new Promise(() => {}); }
+  }
   boot.step('설정을 읽는 중…');
   // ---------- 상태 ----------
   let storage = null;
@@ -89,7 +100,7 @@ try {
   const introAtStart = !!presCfg && !EDIT && (introParam === '1' || (introParam !== '0' && (introStartMode() === 'always' || (introStartMode() === 'first' && lsGet(INTRO_SEEN_KEY) !== '1'))));
   let rest = restFromLayout(L);
   let grid = buildNavGrid({ outline: outlineFromLayout(L), obstacles: obstaclesFromLayout(L) });
-  const makeController = () => createController({ grid, rest, clips: { SitDown_Ground: clipInfo.clips.SitDown_Ground.seconds, StandUp_Ground: clipInfo.clips.StandUp_Ground.seconds }, speed: charInfo.walk_speed, initial: 'Seated' });
+  const makeController = () => createController({ grid, rest, clips: { SitDown_Ground: playSeconds('SitDown_Ground', clipInfo.clips.SitDown_Ground.seconds), StandUp_Ground: playSeconds('StandUp_Ground', clipInfo.clips.StandUp_Ground.seconds) }, speed: charInfo.walk_speed, initial: 'Seated' });
   let ctrl = makeController();
   const clock = createClock();
   const rainState = createRainState({ duration: S.scene.rain.duration });
@@ -123,7 +134,7 @@ try {
   let modelsDone = 0;
   const modelStep = () => boot.step(`3D 모델을 받는 중… ${modelsDone}/${MODEL_COUNT}`);
   modelStep();
-  const characterP = loadCharacter('assets/character.glb', { walkSpeedRef: charInfo.walk_speed })
+  const characterP = loadCharacter('assets/character.glb', { walkSpeedRef: charInfo.walk_speed, clipTime: clipTimeAt })
     .then((c) => { modelsDone++; modelStep(); return c; }, (e) => { throw bootError('asset', 'assets/character.glb 받기 실패', e); });
   characterP.catch(() => {});                                          // 소품을 기다리는 동안 처리 안 된 거부 경고 방지 (아래 await에서 처리)
   const { props, failed } = await loadProps(undefined, { onLoaded: () => { modelsDone++; modelStep(); } });
@@ -150,6 +161,8 @@ try {
   scene.add(fire.group);
   const sky = createSky({ quality });
   scene.add(sky.group);
+  const meteors = createMeteors();                                    // 유성우: 섬을 둘러싼 둥근 하늘(반지름 30) — 카메라를 따라다니지 않음(원근·시차)
+  scene.add(meteors.group);
   const rain = createRain({ quality });
   scene.add(rain.group);
   let hv = logHitVolume(L);
@@ -207,6 +220,7 @@ try {
     sky.setPixelRatio(pr);
   }
   addEventListener('resize', resize);
+  new ResizeObserver(() => resize()).observe(stage);                  // 편집 모드 화면 나누기 등 창 크기 변화 없이 무대만 바뀔 때도
   resize();
 
   // ---------- 편집 모드 (?edit) ----------
@@ -219,18 +233,27 @@ try {
     editor = createEditor($('editRoot'), L, {
       scene, camera, canvas: renderer.domElement, terrain, world: worldApi, characterRoot: character.root, store, rig, toast, firstView,
       presentation: () => presentation, presentationConfig: presCfg,   // 인트로 편집 탭 (인트로 런타임은 아래에서 만듦)
+      presentRoot: $('present'),
+      project(p) {                                                       // 3D 점 → 화면 px (카메라 뒤면 null) — 인트로 편집의 클릭 초점 표시
+        const v = new THREE.Vector3(p[0], p[1], p[2]).project(camera);
+        if (v.z > 1) return null;
+        const r = canvas.getBoundingClientRect();
+        return [r.left + ((v.x + 1) / 2) * r.width, r.top + ((1 - v.y) / 2) * r.height];
+      },
       applyLayout, check,
       startTest(L2) { applyLayout(L2, { final: true }); ctrl = makeController(); testing = true; markerT = 0; return true; },   // 새 배치·착석 상태에서 시작 (이전 목표·대기 요청 없음)
       stopTest() { ctrl = makeController(); testing = false; },
     });
   }
-  let presentation = null;                 // 아래에서 만듦 (인트로 중에는 'present' — 캐릭터·카메라·촬영 입력 없음)
+  let presentation = null;                 // 아래에서 만듦
+  let sandbox = null;                      // 인트로 체험 패널 (아래에서) (인트로 중에는 'present' — 캐릭터·카메라·촬영 입력 없음)
   const mode = () => (presentation?.blocking ? 'present' : store.photo.active ? 'photo' : editor && !testing ? 'edit' : 'view');
   const charCtrl = () => (editor && !testing ? preview : ctrl);
 
   // ---------- 입력 ----------
   // 감상: 왼쪽 클릭 = 이동·쉬기, 왼쪽/오른쪽 드래그 = 회전, 휠 버튼 드래그 = 평행 이동, 휠 = 거리
   // 촬영: 왼쪽 클릭 = 초점(화면 클릭 초점일 때), 나머지 같음 · 편집: 왼쪽 = 선택·물체 이동/회전 고리(빈 곳 드래그는 무동작), 오른쪽 = 회전
+  // 인트로 편집 탭: 감상처럼 왼쪽 드래그 = 회전, 왼쪽 클릭 = 그 자리에 초점(섹션 심도, 저장 전)
   // 터치(감상·촬영): 탭 = 이동·쉬기/초점, 한 손가락 = 회전, 두 손가락 이동 = 평행 이동, 핀치 = 거리
   const canvas = renderer.domElement;
   const taps = createTapDetector();
@@ -250,6 +273,8 @@ try {
   }
   const REASON = { 'outside-island': '섬 밖은 갈 수 없어요', 'not-walkable': '그곳은 갈 수 없어요', 'no-path': '가는 길이 없어요', 'start-blocked': '지금은 움직일 수 없어요' };
   function onTap(x, y) {
+    // 지나가는 별똥별을 누르면 소원 (U-20) — 이동보다 먼저
+    if (mode() === 'view') { const m = meteors.hit(x, y, camera, canvas.getBoundingClientRect(), matchMedia('(pointer: coarse)').matches ? 46 : 32); if (m) { meteors.wish(m); toast('별똥별에 소원을 빌었어요 ✦', 2200); return; } }
     if (store.photo.active) {                                           // 촬영 모드: 이동 대신 초점 선택 (화면 클릭 초점일 때)
       if (S.camera.focus.mode !== 'point') return;
       aim(x, y);
@@ -278,10 +303,11 @@ try {
     if (!touch && e.button === 1) kind = 'pan';
     else if (!touch && e.button === 2) kind = 'rotate';
     else if (touch) kind = 'touch';
+    else if (mode() === 'edit' && editor.introTab) kind = 'introLeft';
     else if (mode() === 'edit') kind = editor.pointerDown(e.clientX, e.clientY) ? 'edit' : 'editEmpty';
     else kind = 'left';
     ptrs.set(e.pointerId, { kind, x: e.clientX, y: e.clientY });
-    if (kind === 'left' || kind === 'touch' || kind === 'editEmpty') taps.down(e.pointerId, e.clientX, e.clientY, e.timeStamp);
+    if (kind === 'left' || kind === 'touch' || kind === 'editEmpty' || kind === 'introLeft') taps.down(e.pointerId, e.clientX, e.clientY, e.timeStamp);
     if (kind === 'touch' && touches().length >= 2) gesture = twoFinger();
   });
   canvas.addEventListener('pointermove', (e) => {
@@ -295,7 +321,7 @@ try {
       case 'rotate': rig.rotateBy(dx, dy, h); break;
       case 'edit': editor.pointerMove(e.clientX, e.clientY, e); break;
       case 'editEmpty': taps.move(e.pointerId, e.clientX, e.clientY); break;      // 편집 중 빈 곳 왼쪽 드래그 = 아무것도 안 함
-      case 'left': if (taps.move(e.pointerId, e.clientX, e.clientY) === 'drag') rig.rotateBy(dx, dy, h); break;
+      case 'left': case 'introLeft': if (taps.move(e.pointerId, e.clientX, e.clientY) === 'drag') rig.rotateBy(dx, dy, h); break;
       case 'touch': {
         const mv = taps.move(e.pointerId, e.clientX, e.clientY);
         if (touches().length >= 2) {
@@ -315,15 +341,22 @@ try {
     const p = ptrs.get(e.pointerId);
     ptrs.delete(e.pointerId);
     if (!p) return;
-    const tapKind = p.kind === 'left' || p.kind === 'touch' || p.kind === 'editEmpty';
+    const tapKind = p.kind === 'left' || p.kind === 'touch' || p.kind === 'editEmpty' || p.kind === 'introLeft';
     const tap = tapKind && !cancelled ? taps.up(e.pointerId, e.clientX, e.clientY, e.timeStamp) : (taps.cancel(e.pointerId), null);
     if (p.kind === 'edit') { if (cancelled) editor.cancelDrag(); else editor.pointerUp(); }
     if (p.kind === 'touch' && touches().length < 2) gesture = null;
     rig.commit();
     if (!tap) return;
     if (p.kind === 'editEmpty') { if (mode() === 'edit') editor.tap(tap.x, tap.y); }
+    else if (p.kind === 'introLeft') introFocus(tap.x, tap.y);
     else onTap(tap.x, tap.y);
   };
+  /** 인트로 편집: 클릭한 물체 표면에 초점 */
+  function introFocus(x, y) {
+    aim(x, y);
+    const hit = ray.intersectObjects([world, character.root, fire.group], true).find((hh) => hh.object.visible !== false && hh.object.isMesh);
+    if (hit && editor?.intro?.focusAt(hit.point.toArray())) toast('여기에 초점을 맞췄어요');
+  }
   canvas.addEventListener('pointerup', (e) => end(e, false));
   canvas.addEventListener('pointercancel', (e) => end(e, true));
   canvas.addEventListener('wheel', (e) => { e.preventDefault(); rig.zoomBy(Math.exp(e.deltaY * 0.0012)); clearTimeout(canvas._wt); canvas._wt = setTimeout(() => rig.commit(), 300); }, { passive: false });
@@ -334,7 +367,7 @@ try {
   function hover(x, y) {
     aim(x, y);
     hoverLog = mode() === 'view' && ray.intersectObject(logHit, false).length > 0;
-    canvas.style.cursor = hoverLog && ctrl.state !== 'Seated' ? 'pointer' : 'default';
+    canvas.style.cursor = mode() === 'edit' && editor?.introTab ? 'crosshair' : hoverLog && ctrl.state !== 'Seated' ? 'pointer' : 'default';
   }
   const coarse = matchMedia('(pointer: coarse)').matches;
   function updateRestLabel() {
@@ -344,8 +377,9 @@ try {
     restLabel.hidden = !show;
     if (show) {
       const p = new THREE.Vector3(hv.center[0], logHit.position.y + 0.45, hv.center[2]).project(camera);
-      restLabel.style.left = `${((p.x + 1) / 2) * canvas.clientWidth}px`;
-      restLabel.style.top = `${((1 - p.y) / 2) * canvas.clientHeight}px`;
+      const cr = canvas.getBoundingClientRect();
+      restLabel.style.left = `${cr.left + ((p.x + 1) / 2) * cr.width}px`;
+      restLabel.style.top = `${cr.top + ((1 - p.y) / 2) * cr.height}px`;
     }
   }
 
@@ -363,7 +397,7 @@ try {
     if (e.type === 'preset' && e.changes.includes('scene')) { rainState.setDuration(S.scene.rain.duration); rainState.setOn(S.scene.rain.on); }
     if (e.type === 'reset' && (e.scope === 'all' || e.scope === 'envScreen')) { rainState.setDuration(S.scene.rain.duration); rainState.setOn(false); }
     if (e.type === 'reset' && e.scope === 'all') {                       // 타이머·남은 입자·캐릭터·시계까지 모순 없이 처음으로
-      rainState.reset(); fireW.reset(); wetness.reset(); wetLook.reset(); runtime.auroraLevel = 0; fire.clearParticles(); ctrl.reset(); clock.reset(); clock.setPaused(false);
+      rainState.reset(); fireW.reset(); wetness.reset(); wetLook.reset(); runtime.auroraLevel = 0; meteors.clear(); fire.clearParticles(); ctrl.reset(); clock.reset(); clock.setPaused(false);
       if (S.quality.mode !== 'auto') applyQuality(S.quality.mode); else { governor.reset('high'); applyQuality('high'); }
       applyEffectsOff();
     }
@@ -387,9 +421,9 @@ try {
   }
 
   // ---------- 그리기 ----------
-  /** 초점 거리. modeOverride: 인트로 섹션 심도의 초점('character' | 'fire' | 'target') */
-  function focusDistance(modeOverride) {
-    const f = modeOverride ? { mode: modeOverride } : S.camera.focus;
+  /** 초점 거리. override: 인트로 섹션 심도의 초점 { mode: 'character' | 'fire' | 'target' | 'point', point } */
+  function focusDistance(override) {
+    const f = override ?? S.camera.focus;
     if (f.mode === 'manual') return (f.distanceM * 1000) / H_MM;           // 가상 m → H
     if (f.mode === 'target') return Math.max(0.05, camera.position.distanceTo(rig.current.target));
     const p = f.mode === 'fire' ? new THREE.Vector3(firePos.x, firePos.y + 0.3, firePos.z)
@@ -398,14 +432,25 @@ try {
     // 심도 셰이더는 시선 방향 깊이(view z)로 비교 → 초점도 같은 깊이로 (1차: 직선 거리라 화면 가장자리 인물이 약 3% 어긋나 흐려짐)
     return Math.max(0.05, -p.applyMatrix4(camera.matrixWorldInverse).z);
   }
+  /** 인트로 심도: 앞 섹션(a) → 이 섹션(b)을 k만큼. 한쪽이 없으면 흐림 0에서/으로 (초점은 있는 쪽) — 예: 기타 → 캐릭터로 초점만 옮겨 감 */
+  function introDof({ a, b, k }) {
+    const A = a ?? b, B = b ?? a;
+    const fa = focusDistance({ mode: A.focus, point: A.point }), fb = B === A ? fa : focusDistance({ mode: B.focus, point: B.point });
+    const blur = (a ? a.maxBlur : 0) + ((b ? b.maxBlur : 0) - (a ? a.maxBlur : 0)) * k;
+    return { on: true, focus: fa + (fb - fa) * k, fstop: A.fstop + (B.fstop - A.fstop) * k, maxBlur: blur };
+  }
   function draw(t) {
     if (rain.group.visible || wetLook.hasWet(wetness.values)) rain.renderOcclusion(renderer, scene);   // 그친 뒤에도 마를 때까지 (움직인 캐릭터·옮긴 소품 기준)
     // 인트로: 섹션 카메라의 심도(있으면)·블룸 조절·전시 필터와 빗물 씻김. 탐험에서는 present가 null → 필터 단계 없음
     const pdof = presentation?.dof();
-    const dof = pdof && !S.quality.effectsOff.dof ? { on: true, focus: focusDistance(pdof.focus), fstop: pdof.fstop, maxBlur: pdof.maxBlur }
+    const dof = pdof && !S.quality.effectsOff.dof ? introDof(pdof)
       : presentation?.blocking ? null
         : S.camera.dof.on && !S.quality.effectsOff.dof ? { on: true, focus: focusDistance(), fstop: S.camera.dof.fstop, maxBlur: S.camera.dof.maxBlur } : null;
     const present = presentation?.renderState() ?? null;
+    if (present && present.wash >= 0) {                                  // 번짐 시작점 = 화면 속 모닥불 (화면 밖이면 가장자리 안쪽으로)
+      const v = new THREE.Vector3(firePos.x, firePos.y + 0.25, firePos.z).project(camera);
+      present.origin = [Math.min(0.9, Math.max(0.1, v.x * 0.5 + 0.5)), Math.min(0.9, Math.max(0.1, v.y * 0.5 + 0.5))];
+    }
     const screen = present ? presentation.screen(S.screen) : S.screen;
     post.render(scene, camera, { dof, screen, time: t, ao: !S.quality.effectsOff.ao, present });
   }
@@ -435,7 +480,8 @@ try {
     const insetY = mobile && p && !hidden ? Math.round(p.offsetHeight / 2) : 0;
     const open = document.getElementById('ui').classList.contains('open');
     const ep = document.querySelector('.edit-panel');
-    const insetX = (!mobile && open && p && !hidden ? Math.round((p.offsetWidth + 16) / 2) : 0) - (!mobile && ep && !hidden ? Math.round((ep.offsetWidth + 12) / 2) : 0);
+    const split = stage.getBoundingClientRect().left > 0;                // 편집 모드 화면 나누기: 패널이 화면을 가리지 않으므로 중심 이동 없음
+    const insetX = (!mobile && open && p && !hidden ? Math.round((p.offsetWidth + 16) / 2) : 0) - (!mobile && ep && !hidden && !split ? Math.round((ep.offsetWidth + 12) / 2) : 0);
     const key = `${insetX},${insetY},${stage.clientWidth},${stage.clientHeight}`;
     if (key === lastInset) return;
     lastInset = key;
@@ -452,6 +498,7 @@ try {
 
   const panel = createPanel($('ui'), store, {
     toast, savePNG, setUIHidden,
+    openEdit: EDIT ? null : async () => { if (adminUnlocked() || await askAdminPin()) location.href = editUrl(); },
     rainStatus() {
       if (rainState.phase === 'off') return '비 없음';
       const rem = rainState.remaining;
@@ -466,16 +513,58 @@ try {
   setInterval(() => panel.refresh(), 500);
   const hud = createHud($('ui'), store, { savePNG, setUIHidden, storage, autoHelp: !EDIT && !introAtStart, replayIntro: presCfg && !EDIT ? () => replayIntro() : null });
 
+  // ---------- 인트로 체험 버튼 (U-17) ----------
+  // 장면 값(비·오로라·불·바람 등)을 저장 없이 잠시 바꾸고, 끝나면 바꾸기 전 값으로. 'walk' = 걸어갔다 통나무로 돌아와 앉기를 되풀이
+  let demoSaved = null;                    // { 장면 경로: 바꾸기 전 값 } (넣은 순서대로)
+  let demoWalk = null;                     // { to: [x, z], phase: 'go' | 'look' | 'back' | 'sit', t }
+  const sceneGet = (k) => k.split('.').reduce((o, x) => o?.[x], S.scene);
+  const DEMO_WALK = { look: 1.6, sit: 2.4 };   // 도착해서 둘러보는 시간 · 앉은 뒤 다시 일어나기까지 (초)
+  const demoHooks = {
+    begin(d, { preview: inEditor = false } = {}) {
+      demoHooks.end();
+      demoSaved = {};
+      const put = (k, v) => { if (!(k in demoSaved)) demoSaved[k] = sceneGet(k); store.set(`scene.${k}`, v, { save: false }); };
+      if (d.scene['rain.on']) put('rain.duration', 'loop');               // 보는 동안 그치지 않게
+      for (const [k, v] of Object.entries(d.scene)) put(k, v);
+      if ('fire.base' in d.scene && !S.scene.rain.on) fireW.reset();     // 불 버튼: 앞서 본 비로 잦아든 불을 바로 되살림 (비가 오는 중이면 그대로)
+      if (d.act === 'walk' && !inEditor && !editor) walkGo(d.walkTo ?? [rest.approach[0] + 0.7, rest.approach[1] + 1.2]);
+    },
+    end() {
+      if (demoSaved) for (const [k, v] of Object.entries(demoSaved).reverse()) store.set(`scene.${k}`, v, { save: false });
+      demoSaved = null;
+      if (demoWalk) { demoWalk = null; if (ctrl.state !== 'Seated') ctrl.request({ type: 'log' }); }   // 걷던 중이면 통나무로 돌아가 앉음
+    },
+  };
+  function walkGo(to) {
+    const r = ctrl.request({ type: 'ground', point: to });
+    if (!r.accepted) { console.warn('체험 걷기: 갈 수 없는 자리', to, r.reason); demoWalk = null; return; }
+    demoWalk = { to, phase: 'go', t: 0 };
+    const goal = ctrl.path?.length ? ctrl.path[ctrl.path.length - 1] : to;
+    marker.position.set(goal[0], terrain.height(goal[0], goal[1]) + 0.012, goal[1]); markerT = 3;   // 클릭한 자리 표시와 같은 고리
+  }
+  function walkStep(dt) {
+    const w = demoWalk;
+    if (!w) return;
+    w.t += dt;
+    if (w.phase === 'go' && ctrl.state === 'Standing') { w.phase = 'look'; w.t = 0; }
+    else if (w.phase === 'look' && w.t >= DEMO_WALK.look) { ctrl.request({ type: 'log' }); w.phase = 'back'; }
+    else if (w.phase === 'back' && ctrl.state === 'Seated') { w.phase = 'sit'; w.t = 0; }
+    else if (w.phase === 'sit' && w.t >= DEMO_WALK.sit) walkGo(w.to);
+  }
+
   // ---------- 인트로 (Presentation Mode) ----------
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   if (presCfg || EDIT) {                                                 // 편집 모드는 파일이 없어도 새로 만들 수 있게
     presentation = createPresentation($('present'), presCfg ?? defaultPresentation(), {
       rig,
+      demo: demoHooks,
+      onDemoPreview: (d, k, side) => editor?.intro?.demoPicked?.(d, k, side),   // 편집기 미리보기에서 체험 버튼을 누름 → 그 버튼 구도를 고침
       isPortrait: () => innerWidth / Math.max(1, innerHeight) < 0.8,
       reducedMotion: () => reducedMotion.matches,
       onEscape: () => !!editor?.introEscape(),                           // 편집기에서 재생 중이면 Esc = 편집으로
       // 인트로로 들어올 때: 촬영 모드·UI 숨김·도움말·설정 패널을 정리 (날씨·오로라·불·화면 설정은 그대로)
       onPresent() {
+        meteors.soon(2.4, { hero: true });                               // 인트로 첫 장면: 카메라가 자리 잡은 뒤(2.4초) 밝은 별똥별 하나 (유성우를 켜 둔 경우, U-20)
         if (store.photo.active) store.exitPhoto();
         setUIHidden(false);
         hud.closeHelp?.();
@@ -492,6 +581,14 @@ try {
         hud.maybeAutoHelp?.();
       },
     });
+    // 체험 패널 (섹션 sandbox): 배치를 미리보기로만 바꿈 — 닫으면 원래대로 (배치 파일·편집 상태와 무관)
+    sandbox = createSandbox($('present'), {
+      THREE, scene, camera, world: worldApi, terrain,
+      names: () => unitsOf(L).filter((u) => SANDBOX_TARGETS.includes(u.id)).map(({ id, name }) => ({ id, name })),
+      edge: (x, z) => Math.hypot(x / L.island.top_rx, z / L.island.top_rz),   // 섬 윗면 타원 기준 (1 = 가장자리)
+      loadControls: () => import('three/addons/controls/TransformControls.js').then((m) => m.TransformControls),
+    });
+    presentation.app.sandbox = sandbox;
     if (introAtStart) presentation.start(0, { instant: true });   // 첫 프레임부터 인트로 첫 장 구도
   }
   function replayIntro() { presentation?.start(0); }
@@ -522,13 +619,13 @@ try {
     const wasOn = rainState.on;
     rainState.update(dt);
     if (wasOn && !rainState.on && S.scene.rain.on) store.set('scene.rain.on', false);     // 시간이 다 되어 저절로 그침 → 버튼 상태도
-    fireW.update(dt, rainState.level);
+    fireW.update(dt, rainState.level, rainState.on);
     wetness.update(dt, rainState.level, S.scene.rain.intensity);
     wetLook.apply(wetness.values);
     const auroraTarget = S.scene.aurora.on ? 1 : 0;
     runtime.auroraLevel += Math.sign(auroraTarget - runtime.auroraLevel) * Math.min(Math.abs(auroraTarget - runtime.auroraLevel), dt / 5);   // 5초 페이드
     runtime.fireActual = fireActual(S.scene.fire.base, fireW.weather, flicker(t, S.scene.fire.flicker / 0.3));
-    if (!editor || testing) ctrl.update(dt);
+    if (!editor || testing) { ctrl.update(dt); walkStep(dt); }
     const cc = charCtrl();
     character.update(dt, cc, { walkSpeed: charInfo.walk_speed });
     // 섬 윗면 높이 + 휴식 자리 높이 보정(접근 위치 가까이에서만 — 통나무와 같은 기준)
@@ -538,8 +635,12 @@ try {
     fire.update(dt, t, runtime.fireActual, { wind, sparks: S.scene.fire.sparks, smoke: S.scene.fire.smoke, smokeBoost: rainState.level * 0.6, sparksOff: S.quality.effectsOff.sparks, smokeOff: S.quality.effectsOff.smoke });
     const link = S.scene.weatherLink ? rainState.level : 0;               // 날씨와 하늘 연동: 비가 오면 별·오로라가 가려짐 (선택값은 그대로)
     sky.update(t, { starIntensity: S.scene.stars.intensity * (1 - 0.7 * link), twinkle: S.scene.stars.twinkle, auroraLevel: S.quality.effectsOff.aurora ? 0 : runtime.auroraLevel * (1 - 0.85 * link), auroraIntensity: S.scene.aurora.intensity, auroraSpeed: S.scene.aurora.speed });
+    // 유성우: 비가 오면 가려짐(일시 정지면 멈춤), 오로라가 켜져 있으면 조금 더 자주, 근처 별 반짝 (U-20)
+    meteors.update(dt, { camera, rate: Math.min(1, S.scene.meteors.rate + 0.3 * runtime.auroraLevel), level: S.scene.meteors.on ? 1 - link : 0, pixelRatio: renderer.getPixelRatio(), filter: presentation?.renderState()?.amount ?? 0 });
+    sky.setExcite(meteors.excite(camera));
     rain.update(t, { level: rainState.level, intensity: S.scene.rain.intensity, wind, fire: { pos: new THREE.Vector3(firePos.x, firePos.y + 0.3, firePos.z), actual: runtime.fireActual } });
     presentation?.update(realDt);                                         // 인트로 카메라(덮어쓰기)·필터·씻김 진행
+    sandbox?.update(realDt);                                              // 인트로 체험 패널 (명령 타자·옮겨 가기·고리)
     rig.update(realDt);
     if (camera.fov !== lastFov) { lastFov = camera.fov; resize(); }          // 렌즈(화각)가 바뀌면 불티·빗방울 점 크기 기준도 다시
     fitToSheet();
@@ -551,7 +652,7 @@ try {
     if (!window.__camp.firstFrameMs) window.__camp.firstFrameMs = Math.round(performance.now());   // 탐색 시작 → 첫 프레임 (로딩 시간)
     if (DEBUG) $('debug').textContent = `${mode()} · ${cc.state} ${character.clip} · pending ${ctrl.pending ? ctrl.pending.type : '-'} · 불 ${runtime.fireActual.toFixed(2)} · 비 ${rainState.phase} · ${QNAME[quality]} · ${(realMs).toFixed(1)}ms`;
   }
-  window.__camp = { THREE, renderer, scene, camera, store, character, rig, rainState, fireW, runtime, clock, post, fire, sky, rain, panel, hud, presentation, governor, editor, firePos, logHit,
+  window.__camp = { THREE, renderer, scene, camera, store, character, rig, rainState, fireW, runtime, clock, post, fire, sky, rain, panel, hud, presentation, sandbox, meteors, governor, editor, firePos, logHit,
     get ctrl() { return ctrl; }, get grid() { return grid; }, get rest() { return rest; }, get L() { return L; }, get mode() { return mode(); }, get testing() { return testing; },
     get quality() { return quality; }, CHAR_LOOK, pick, onTap, draw, savePNG, terrain, world, worldApi, usingProps, failed, wetness, wetLook, applyLayout, check,
     tapAt(x, y) { const req = pick(x, y); return req ? ctrl.request(req) : null; },
