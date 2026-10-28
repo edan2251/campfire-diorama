@@ -33,10 +33,12 @@ export function createHud(root, store, app) {
   const more = el('details', { class: 'help-more' }, el('summary', {}, '자세한 조작'), el('ul', {}, MORE.map((t) => el('li', {}, t))),
     el('p', { class: 'help-credit' }, '3D 모델: Tripo AI로 제작 · 렌더링: three.js (MIT 라이선스)'));   // 제작 출처 (개인 계정명 없음)
   const closeBtn = el('button', { class: 'help-close', type: 'button', onclick: () => closeHelp() }, '알겠어요');
+  // 인트로 다시 보기 (인트로 설정이 있을 때만)
+  const replayBtn = app.replayIntro ? el('button', { class: 'help-replay', type: 'button', onclick: () => { closeHelp(); app.replayIntro(); } }, '인트로 다시 보기') : null;
   const card = el('section', { class: 'help', id: 'helpCard', role: 'dialog', 'aria-modal': 'false', 'aria-labelledby': 'helpTitle', hidden: '' },
     el('h2', { id: 'helpTitle', tabindex: '-1' }, '조작 안내'),
     el('ul', { class: 'help-quick' }, QUICK.map((t) => el('li', {}, t))),
-    more, closeBtn);
+    more, closeBtn, replayBtn);
 
   // ---------- 촬영 막대 ----------
   const pngBtn = el('button', { class: 'accent', type: 'button', onclick: async () => {
@@ -86,9 +88,12 @@ export function createHud(root, store, app) {
   const hint = document.getElementById('uiHint');
   if (hint) hint.textContent = touch ? 'UI 보이기' : 'UI 보이기 (Esc)';
 
-  let seen = false;
-  try { seen = app.storage?.getItem(SEEN_KEY) === '1'; } catch { seen = false; }
-  if (app.autoHelp && !seen) openHelp(false);
+  const seen = () => { try { return app.storage?.getItem(SEEN_KEY) === '1'; } catch { return false; } };
+  if (app.autoHelp && !seen()) openHelp(false);
 
-  return { openHelp: () => openHelp(true), closeHelp, get helpOpen() { return helpOpen; }, refresh, SEEN_KEY };
+  return {
+    openHelp: () => openHelp(true), closeHelp, get helpOpen() { return helpOpen; }, refresh, SEEN_KEY,
+    /** 인트로를 마치고 탐험으로 올 때: 첫 방문이면 조작 안내를 한 번 */
+    maybeAutoHelp() { if (!seen() && !helpOpen) openHelp(false); },
+  };
 }

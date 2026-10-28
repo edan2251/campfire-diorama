@@ -32,6 +32,7 @@ export function createCameraRig(camera, store, { tau = 0.12, ground = null } = {
   const c0 = store.settings.camera;
   const cur = { azimuth: c0.azimuth, elevation: c0.elevation, distance: c0.distance, target: new THREE.Vector3(...c0.target), lens: c0.lens };
   let lastLift = 0;
+  let override = null;           // 인트로(Presentation Mode)가 정한 카메라 값 — 있는 동안 사용자 설정·부드럽게 따라가기를 쓰지 않음
   let side = null;               // 소품 안에 들어갔을 때 고른 쪽: 'pull'(타깃 쪽 앞면) | 'push'(바깥 뒷면) — 안에 있는 동안 유지(떨림·튐 방지)
   const probe = new THREE.Vector3();
 
@@ -93,6 +94,18 @@ export function createCameraRig(camera, store, { tau = 0.12, ground = null } = {
       store.set('camera.distance', store.settings.camera.distance * factor, { save: false });
     },
     commit() { store.save(); },
+    /**
+     * 인트로 카메라: p = { azimuth, elevation, distance, lens, target:[x,y,z] } 를 바로 적용 (보간은 인트로가 함). null이면 해제 →
+     * 다음 update부터 사용자 설정(store)을 부드럽게 따라감 (cur가 마지막 인트로 값이라 튀지 않음)
+     */
+    setOverride(p) {
+      override = p;
+      if (!p) return;
+      Object.assign(cur, { azimuth: p.azimuth, elevation: p.elevation, distance: p.distance, lens: p.lens });
+      cur.target.set(p.target[0], p.target[1], p.target[2]);
+      place();
+    },
+    get overridden() { return !!override; },
     /** 바로 맞춤 (초기화·프리셋·시점 불러오기 직후 튐 대신 즉시 이동이 필요할 때) */
     snap() {
       const c = store.settings.camera;
@@ -101,6 +114,7 @@ export function createCameraRig(camera, store, { tau = 0.12, ground = null } = {
       place();
     },
     update(realDt) {
+      if (override) { api.setOverride(override); return; }          // 사이에 snap()이 cur를 바꿨어도 인트로 값으로
       const c = store.settings.camera;
       const k = 1 - Math.exp(-Math.max(0, realDt) / tau);      // 실제 시간 기준 (일시 정지 중에도 카메라는 움직임)
       cur.azimuth = wrap180(cur.azimuth + wrap180(c.azimuth - cur.azimuth) * k);

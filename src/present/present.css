@@ -1,0 +1,140 @@
+/* 인트로 (Presentation Mode) 전용 디자인 — 설정 패널과 별개의 체계.
+   방향 "전시 캡션"(P-00에서 3안 비교 → evidence/P-00): 3D 장면이 곧 슬라이드, 글은 가장자리의 작은 캡션처럼.
+   카드·상자 없이 여백·세리프 제목·가는 선·작은 숫자만. 읽기 쉬움은 글 쪽 가장자리만 살짝 어둡게(scrim). */
+:root {
+  --pr-ink: #f3ece2;
+  --pr-dim: rgba(243, 236, 226, 0.68);
+  --pr-faint: rgba(243, 236, 226, 0.42);
+  --pr-line: rgba(243, 236, 226, 0.24);
+  --pr-accent: #e9b67c;
+  --pr-serif: "Gowun Batang", "Noto Serif KR", "Nanum Myeongjo", "AppleMyungjo", "Batang", serif;
+  --pr-sans: "Pretendard Variable", Pretendard, "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+  --pr-edge: clamp(20px, 4.4vw, 76px);
+  --pr-dur: 0.9s;
+  --pr-ease: cubic-bezier(0.37, 0, 0.23, 1);
+}
+.pr { position: fixed; inset: 0; z-index: 25; color: var(--pr-ink); font-family: var(--pr-sans); touch-action: none; user-select: none; -webkit-user-select: none; overflow: hidden; outline: none; word-break: keep-all; overflow-wrap: anywhere; }
+.pr[hidden] { display: none; }
+.pr.preview { pointer-events: none; z-index: 15; }               /* 편집기 미리보기: 편집 패널(20) 아래 */
+body.present-preview #ui, body.present-preview #restLabel, body.present-preview .edit-toolbar { display: none !important; }
+.pr.preview .pr-skip, .pr.preview .pr-rail, .pr.preview .pr-hint { visibility: hidden; }
+
+/* 글 쪽만 살짝 어둡게 — 정렬·세로 위치에 따라 */
+.pr-scrim { position: absolute; inset: 0; pointer-events: none; transition: opacity 0.8s ease, background 0.8s ease;
+  background: radial-gradient(ellipse 70% 75% at var(--sx, 0%) var(--sy, 100%), rgba(4, 6, 14, 0.62), rgba(4, 6, 14, 0.18) 55%, transparent 80%); }
+.pr[data-align="right"] { --sx: 100%; }
+.pr[data-align="center"] { --sx: 50%; }
+.pr[data-vertical="top"] { --sy: 0%; }
+.pr[data-vertical="middle"] { --sy: 50%; }
+.pr.washing .pr-scrim, .pr.washing .pr-top, .pr.washing .pr-rail, .pr.washing .pr-hint { opacity: 0; transition: opacity 0.45s ease; }
+
+/* 위: 01 ── 05 · 섹션 이름 / 바로 탐험하기 */
+.pr-top { position: absolute; left: var(--pr-edge); right: var(--pr-edge); top: calc(var(--pr-edge) * 0.62); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.pr-index { display: flex; align-items: center; gap: 12px; font: 500 12px/1 var(--pr-sans); letter-spacing: 0.22em; color: var(--pr-faint); font-variant-numeric: tabular-nums; }
+.pr-cur { color: var(--pr-ink); }
+.pr-bar { position: relative; display: block; width: 48px; height: 1px; background: var(--pr-line); overflow: hidden; }
+.pr-bar b { position: absolute; inset: 0 auto 0 0; width: calc(var(--p, 0) * 100%); background: var(--pr-accent); transition: width var(--pr-dur) var(--pr-ease); }
+.pr-name { margin-left: 10px; letter-spacing: 0.26em; }
+.pr-skip { font: 500 12px/1 var(--pr-sans); letter-spacing: 0.08em; color: var(--pr-faint); background: none; border: 0; padding: 10px 0; cursor: pointer; }
+.pr-skip::after { content: " →"; }
+.pr-skip:hover { color: var(--pr-dim); }
+.pr-skip[hidden] { display: none; }
+
+/* 오른쪽 가는 선 목록 (누르면 그 섹션) */
+.pr-rail { position: absolute; right: calc(var(--pr-edge) * 0.42); top: 50%; transform: translateY(-50%); display: grid; gap: 2px; }
+.pr-rail button { display: grid; place-items: center end; width: 34px; height: 22px; padding: 0; background: none; border: 0; cursor: pointer; }
+.pr-rail i { display: block; width: 12px; height: 1px; background: var(--pr-faint); transition: width 0.4s var(--pr-ease), background 0.4s ease; }
+.pr-rail button.on i { width: 26px; background: var(--pr-accent); }
+.pr-rail button:hover i { background: var(--pr-dim); }
+
+/* 아래 오른쪽: SCROLL ↓ */
+.pr-hint { position: absolute; right: var(--pr-edge); bottom: calc(var(--pr-edge) * 0.62); font: 500 11px/1 var(--pr-sans); letter-spacing: 0.3em; color: var(--pr-faint); animation: prBreath 2.8s ease-in-out infinite; }
+@keyframes prBreath { 50% { opacity: 0.45; transform: translateY(3px); } }
+.pr-live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+/* 섹션 글 */
+.pr-stage { position: absolute; inset: 0; pointer-events: none; }
+.pr-sec { position: absolute; width: min(var(--maxw, 440px), calc(100vw - 2 * var(--pr-edge) - 40px)); pointer-events: auto; }
+.pr-sec.a-left { left: var(--pr-edge); }
+.pr-sec.a-right { right: calc(var(--pr-edge) + 36px); text-align: right; }
+.pr-sec.a-center { left: 50%; transform: translateX(-50%); text-align: center; }
+.pr-sec.v-bottom { bottom: calc(var(--pr-edge) * 0.62 + 38px); }
+.pr-sec.v-top { top: calc(var(--pr-edge) * 0.62 + 52px); }
+.pr-sec.v-middle { top: 50%; }
+.pr-sec.v-middle .pr-in { translate: 0 -50%; }
+.pr-in { transition: transform var(--pr-dur) var(--pr-ease), opacity calc(var(--pr-dur) * 0.8) ease; }
+.pr-in > * { transition: transform var(--pr-dur) var(--pr-ease), opacity var(--pr-dur) ease; }
+.pr-in > :nth-child(2) { transition-delay: 0.05s; }
+.pr-in > :nth-child(3) { transition-delay: 0.1s; }
+.pr-in > :nth-child(n+4) { transition-delay: 0.15s; }
+.pr-sec.enter-below .pr-in > * { transform: translateY(34px); opacity: 0; transition: none; }
+.pr-sec.enter-above .pr-in > * { transform: translateY(-34px); opacity: 0; transition: none; }
+.pr-sec.leave-up .pr-in { transform: translateY(-40px); opacity: 0; }
+.pr-sec.leave-down .pr-in { transform: translateY(40px); opacity: 0; }
+.pr-sec.leave-up, .pr-sec.leave-down { pointer-events: none; }
+
+.pr-label { font: 600 11px/1 var(--pr-sans); letter-spacing: 0.3em; color: var(--pr-accent); }
+.pr-title { margin: 16px 0 0; font: 400 clamp(28px, 3.5vw, 50px)/1.18 var(--pr-serif); letter-spacing: -0.01em; text-wrap: balance; text-shadow: 0 1px 28px rgba(4, 6, 14, 0.6); }
+.pr-sub { margin: 12px 0 0; font: 400 13px/1.55 var(--pr-sans); letter-spacing: 0.04em; color: var(--pr-dim); }
+.pr-body { margin: 18px 0 0; padding-top: 18px; position: relative; font: 400 clamp(13.5px, 1.05vw, 15.5px)/1.85 var(--pr-sans); color: rgba(243, 236, 226, 0.88); text-shadow: 0 1px 14px rgba(4, 6, 14, 0.7); }
+.pr-body::before { content: ""; position: absolute; top: 0; left: 0; width: 56px; height: 1px; background: var(--pr-line); }
+.a-right .pr-body::before { left: auto; right: 0; }
+.a-center .pr-body::before { left: 50%; translate: -50% 0; }
+.pr-keys { list-style: none; margin: 18px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 22px; counter-reset: k; font: 500 12.5px/1.4 var(--pr-sans); letter-spacing: 0.05em; color: var(--pr-dim); }
+.a-right .pr-keys { justify-content: flex-end; }
+.a-center .pr-keys { justify-content: center; }
+.pr-keys li { counter-increment: k; }
+.pr-keys li::before { content: counter(k, decimal-leading-zero); margin-right: 8px; color: var(--pr-accent); font-size: 10.5px; letter-spacing: 0.12em; }
+
+/* 자료 (이미지 1장 · 비교 2장 · 작은 카드 3개) — 얇은 테두리만 */
+.pr-media { margin-top: 22px; display: flex; gap: 12px; align-items: flex-start; }
+.a-right .pr-media { justify-content: flex-end; }
+.a-center .pr-media { justify-content: center; }
+.pr-fig { margin: 0; flex: 1 1 0; min-width: 0; }
+.pr-fig img, .pr-ph { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border: 1px solid var(--pr-line); border-radius: 2px; background: rgba(243, 236, 226, 0.05); }
+.pr-fig.noimg img { display: none; }
+.pr-fig.noimg::before { content: ""; display: block; aspect-ratio: 4 / 3; border: 1px dashed var(--pr-line); border-radius: 2px; }
+.pr-fig figcaption { margin-top: 8px; font: 500 11px/1.4 var(--pr-sans); letter-spacing: 0.08em; color: var(--pr-dim); text-align: left; }
+.a-right .pr-fig figcaption { text-align: right; }
+.a-center .pr-fig figcaption { text-align: center; }
+.pr-n { margin-right: 6px; color: var(--pr-accent); font-size: 10px; letter-spacing: 0.14em; }
+.m-single .pr-fig { flex: 0 1 360px; }
+.m-compare .pr-fig { flex: 1 1 0; }
+.pr-arrow { align-self: center; padding: 0 2px 24px; color: var(--pr-faint); }
+
+/* 마지막 장의 하나뿐인 강조 버튼 */
+.pr-cta { margin-top: 28px; font: 500 15px/1 var(--pr-sans); letter-spacing: 0.05em; color: var(--pr-ink); background: rgba(8, 10, 22, 0.32); border: 1px solid rgba(233, 182, 124, 0.75); border-radius: 999px; padding: 15px 30px; cursor: pointer; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); transition: background 0.3s ease, color 0.3s ease, transform 0.3s var(--pr-ease); }
+.pr-cta:hover { background: var(--pr-accent); color: #1a1208; }
+.pr-cta:active { transform: scale(0.98); }
+.pr :focus-visible { outline: 2px solid var(--pr-accent); outline-offset: 4px; }
+
+/* 인트로 동안 탐험 UI 숨김, 탐험으로 오면 부드럽게 나타남 */
+body.present-mode #ui, body.present-mode #restLabel, body.present-mode #toast, body.present-mode #uiHint, body.present-mode .help { display: none !important; }
+body.present-mode .edit-panel, body.present-mode .edit-toolbar, body.present-mode .edit-label { display: none !important; }
+body.explore-enter #ui { animation: prUiIn 0.7s ease both; }
+@keyframes prUiIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* 휴대폰 세로: 글은 아래 전체 폭, 레일 숨김 */
+@media (max-width: 700px), (max-aspect-ratio: 4/5) {
+  :root { --pr-edge: 20px; }
+  .pr-sec, .pr-sec.a-left, .pr-sec.a-right, .pr-sec.a-center { left: var(--pr-edge); right: var(--pr-edge); width: auto; transform: none; text-align: left; }
+  .pr-sec.v-top, .pr-sec.v-middle, .pr-sec.v-bottom { top: auto; bottom: calc(26px + env(safe-area-inset-bottom)); }
+  .pr-sec.v-middle .pr-in { translate: none; }
+  .a-right .pr-keys, .a-center .pr-keys, .a-right .pr-media, .a-center .pr-media { justify-content: flex-start; }
+  .a-right .pr-body::before, .a-center .pr-body::before { left: 0; right: auto; translate: none; }
+  .a-right .pr-fig figcaption, .a-center .pr-fig figcaption { text-align: left; }
+  .pr { --sx: 50%; --sy: 100%; }
+  .pr-scrim { background: linear-gradient(to top, rgba(4, 6, 14, 0.78), rgba(4, 6, 14, 0.35) 42%, transparent 66%); }
+  .pr-title { font-size: clamp(25px, 7.4vw, 32px); margin-top: 12px; }
+  .pr-body { margin-top: 14px; padding-top: 14px; font-size: 13.5px; line-height: 1.75; }
+  .pr-keys { margin-top: 14px; gap: 6px 16px; font-size: 12px; }
+  .pr-media { margin-top: 16px; gap: 8px; }
+  .m-single .pr-fig { flex-basis: 70%; }
+  .pr-rail { display: none; }
+  .pr-hint { left: 0; right: 0; text-align: center; bottom: 8px; }
+  .pr-cta { width: 100%; padding: 16px 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pr-hint { animation: none; }
+  .pr-in, .pr-in > *, .pr-bar b, .pr-rail i { transition-duration: 0.01s !important; transition-delay: 0s !important; }
+}

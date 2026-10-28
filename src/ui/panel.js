@@ -169,9 +169,24 @@ export function createPanel(root, store, app) {
     el('button', { class: 'ghost', onclick: () => store.reset('envScreen') }, '환경·화면 기본값'),
     el('button', { class: 'ghost danger', onclick: () => { if (confirm('모든 설정·날씨·캐릭터 상태를 처음으로 되돌릴까요?')) store.reset('all'); } }, '전체 초기화'));
   foot.append(el('div', { class: 'lab small' }, '프리셋'), presetRow, resetRow);
+  // 인트로: 다시 보기 + 시작 시 인트로 (방문자 브라우저에 저장, 없으면 presentation.json의 start.mode)
+  const introRow = el('div', { class: 'intro-row', hidden: '' });
+  foot.append(introRow);
+  function setIntroHooks(h) {
+    if (!h) return;
+    const START = [['always', '항상'], ['first', '첫 방문만'], ['never', '표시 안 함']];
+    const seg = el('div', { class: 'seg', role: 'radiogroup', 'aria-label': '시작 시 인트로' });
+    const btns = START.map(([v, t]) => { const b = el('button', { type: 'button', role: 'radio', onclick: () => { h.set(v); r(); app.toast?.(`시작 시 인트로: ${t}`); } }, t); b._v = v; seg.append(b); return b; });
+    const r = () => { const m = h.mode ?? h.fileDefault; for (const b of btns) b.setAttribute('aria-checked', String(b._v === m)); };
+    r();
+    introRow.replaceChildren(
+      el('div', { class: 'lab small' }, '시작 시 인트로'), seg,
+      h.replay ? el('button', { type: 'button', class: 'ghost', onclick: () => h.replay() }, '인트로 다시 보기') : null);
+    introRow.hidden = false;
+  }
 
   function refresh() { for (const r of refreshers) r(); }
   store.subscribe(() => refresh());
   renderTab();
-  return { refresh, setOpen, setSheet, get tab() { return tab; }, selectTab(id) { tab = id; renderTab(); } };
+  return { refresh, setOpen, setSheet, setIntroHooks, get tab() { return tab; }, selectTab(id) { tab = id; renderTab(); } };
 }

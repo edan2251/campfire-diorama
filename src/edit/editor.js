@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { getUnit, setUnit, unitsOf, ruleOf, createHistory, parseLayout, serialize, sameLayout, REST, restLocalToWorld } from '../logic/layout_model.js';
 import { footprintsFromLayout } from '../logic/layout.js';
+import { createIntroEditor } from './intro_editor.js';
 
 const DEG = Math.PI / 180;
 const clone = (v) => JSON.parse(JSON.stringify(v));
@@ -209,9 +210,34 @@ export function createEditor(root, initial, app) {
     el('details', { class: 'edit-help' }, el('summary', {}, '단축키·조작'),
       el('p', {}, 'Q 선택(기즈모 끔) · W 이동 · E 회전 · R 크기 · L 월드/로컬 · F 선택 물체 보기 · Ctrl+Z 실행 취소 · Ctrl+Y / Ctrl+Shift+Z 다시 실행 · Ctrl+S 배치 저장 · Esc 드래그 취소 / 선택 해제'),
       el('p', {}, '기즈모: 빨강 X · 초록 Y · 파랑 Z. 화살표 = 한 축, 작은 사각형 = 평면, 고리 = 그 축으로 회전. 물체 클릭 = 선택, 빈 곳 클릭 = 해제. 오른쪽 드래그 = 카메라 회전, 휠 버튼 드래그 = 평행 이동, 휠 = 거리.')));
-  const panel = el('section', { class: 'edit-panel', 'aria-label': '배치 편집' },
-    el('div', { class: 'edit-top' }, el('strong', {}, '편집 모드'), badge), msgBox, editBox, testBox);
+  // 탭: 장면 편집(배치) | 인트로 편집(presentation.json). 인트로 탭에서는 기즈모·장면 단축키를 끔 (장면 편집 기능은 그대로 남음)
+  let introTab = false;
+  const introBox = el('div', { class: 'edit-main intro-edit', hidden: true });
+  const tabScene = el('button', { type: 'button', role: 'tab', 'aria-selected': 'true', onclick: () => setTab(false) }, '장면 편집');
+  const tabIntro = el('button', { type: 'button', role: 'tab', 'aria-selected': 'false', onclick: () => setTab(true) }, '인트로 편집');
+  const collapseBtn = el('button', { type: 'button', class: 'ghost small edit-collapse', title: '패널 접기/펴기 (미리보기 전체 화면 확인)', onclick: () => panel.classList.toggle('collapsed') }, '접기');
+  const panel = el('section', { class: 'edit-panel', 'aria-label': '편집' },
+    el('div', { class: 'edit-top' }, el('strong', {}, '편집 모드'), badge, collapseBtn),
+    el('div', { class: 'edit-tabs', role: 'tablist' }, tabScene, tabIntro),
+    msgBox, editBox, testBox, introBox);
   root.append(panel);
+  const intro = app.presentation ? createIntroEditor(introBox, {
+    presentation: app.presentation, store: app.store, rig: app.rig, initial: app.presentationConfig, toast: app.toast,
+    setPlaying: (v) => document.body.classList.toggle('intro-playing', v),
+  }) : null;
+  if (!intro) tabIntro.disabled = true;
+  function setTab(toIntro) {
+    if (toIntro === introTab || (toIntro && !intro)) return;
+    if (toIntro && testing) toggleTest();
+    introTab = toIntro;
+    tabScene.setAttribute('aria-selected', String(!toIntro));
+    tabIntro.setAttribute('aria-selected', String(toIntro));
+    editBox.hidden = toIntro || testing; testBox.hidden = toIntro || !testing; introBox.hidden = !toIntro;
+    msgBox.hidden = toIntro;
+    badge.hidden = toIntro;
+    if (toIntro) { if (tc.object) tc.detach(); intro.activate(); } else { intro.deactivate(); applyTool(); }
+    renderToolbar();
+  }
   if (matchMedia('(pointer: coarse)').matches) msgBox.textContent = '편집 모드는 PC(마우스) 우선 지원입니다. 모바일 편집은 검증하지 않았어요.';
 
   function setMsg(kind, text) { message = { kind, text }; msgBox.className = `edit-msg ${kind}`; msgBox.textContent = text; }
@@ -482,7 +508,13 @@ export function createEditor(root, initial, app) {
   }
 
   const api = {
-    get active() { return !testing && !app.store.photo.active; },
+    get active() { return !testing && !app.store.photo.active && !introTab; },
+    get introTab() { return introTab; },
+    intro,
+    setTab,
+    /** 인트로 재생 중 Esc / 씻김 끝 → 편집으로 */
+    introPlayDone() { intro?.playDone(); },
+    introEscape() { if (intro?.playing) { intro.stopPlay(); return true; } return false; },
     get testing() { return testing; },
     get layout() { return L; },
     get saved() { return saved; },
@@ -546,6 +578,12 @@ export function createEditor(root, initial, app) {
     if (testing || app.store.photo.active) return;
     if (e.isComposing || e.keyCode === 229) return;
     const t = e.target;
+    if (introTab) {                                    // 인트로 탭: Ctrl+S만 (인트로 저장). 입력 칸의 Ctrl+Z는 브라우저 기본
+      const inField = t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable);
+      if ((e.ctrlKey || e.metaKey) && e.code === 'KeyS') { e.preventDefault(); intro.save(); }
+      else if (!inField && (e.ctrlKey || e.metaKey) && e.code === 'KeyZ') { e.preventDefault(); if (e.shiftKey) intro.redo(); else intro.undo(); }
+      return;
+    }
     if (t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable)) return;
     // 키 위치(code)로 판별 — 한글 자판 상태에서도 같은 키(ㅂ·ㄷ·ㄱ…)로 동작. 조합 중(isComposing·229)은 위에서 거름
     const k = /^Key[A-Z]$/.test(e.code) ? e.code.slice(3).toLowerCase() : e.key.toLowerCase();

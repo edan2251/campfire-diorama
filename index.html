@@ -52,6 +52,12 @@
   @media (prefers-reduced-motion: reduce) { #bootStep::before { animation: none; } #boot { transition: none; } }
 </style>
 <link rel="stylesheet" href="src/ui/panel.css">
+<!-- 인트로 글꼴 (OFL): 제목 Gowun Batang(Google Fonts), 본문 Pretendard(jsdelivr). 못 받으면 시스템 글꼴 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="src/present/present.css">
 <script type="importmap">
 { "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
@@ -97,6 +103,7 @@
 <div id="toast" role="status" hidden></div>
 <div id="debug" hidden></div>
 <div id="ui"></div>
+<div id="present" hidden></div>
 <div id="editRoot"></div>
 <div id="assetWarn" role="alert" hidden></div>
 <button id="uiHint" type="button">UI 보이기</button>

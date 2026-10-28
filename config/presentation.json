@@ -1,0 +1,285 @@
+{
+  "version": 1,
+  "start": {
+    "mode": "always"
+  },
+  "transition": {
+    "camera": 1.25,
+    "content": 0.9,
+    "easing": "calm",
+    "inputLock": 0.25
+  },
+  "explore": {
+    "washDuration": 2.2,
+    "streaks": 16,
+    "seed": 7
+  },
+  "ambient": {
+    "drift": 0.25
+  },
+  "filter": {
+    "preset": "gouache",
+    "strength": 1,
+    "saturation": -0.12,
+    "contrast": -0.06,
+    "flatten": 0.55,
+    "posterize": 0.22,
+    "paint": 0.8,
+    "outline": 0.12,
+    "paper": 0.45,
+    "vignette": 0.3,
+    "bloom": 0.75,
+    "warmth": 0.1
+  },
+  "sections": [
+    {
+      "id": "intro",
+      "hidden": false,
+      "label": "INTRO",
+      "title": "밤의 작은 쉼터",
+      "subtitle": "AI 콘텐츠 × 바이브코딩 · Interactive 3D Web Diorama",
+      "body": "별빛 아래 떠 있는 작은 섬, 모닥불 곁에서 잠시 쉬어 가는 밤을 웹 위에 지었습니다.",
+      "keywords": [],
+      "layout": {
+        "align": "left",
+        "vertical": "bottom",
+        "maxWidth": 440
+      },
+      "media": {
+        "layout": "none",
+        "items": []
+      },
+      "camera": {
+        "azimuth": 17,
+        "elevation": 21,
+        "distance": 8.9,
+        "lens": 35,
+        "target": [
+          -0.8,
+          0.22,
+          -0.1
+        ],
+        "dof": null
+      },
+      "cameraMobile": {
+        "azimuth": 17,
+        "elevation": 24,
+        "distance": 7,
+        "lens": 35,
+        "target": [
+          -0.1,
+          0,
+          0.6
+        ]
+      },
+      "filter": {},
+      "transition": {},
+      "action": null
+    },
+    {
+      "id": "concept",
+      "hidden": false,
+      "label": "CONCEPT",
+      "title": "조용히 쉬어가는 작은 공간",
+      "subtitle": "",
+      "body": "아마자라시의 보컬 아키타 히로무를 모티브로 한 캐릭터와\n고요한 밤의 휴식 공간을 제작했습니다.",
+      "keywords": [
+        "밤",
+        "모닥불",
+        "휴식",
+        "미니어처"
+      ],
+      "layout": {
+        "align": "left",
+        "vertical": "bottom",
+        "maxWidth": 440
+      },
+      "media": {
+        "layout": "none",
+        "items": []
+      },
+      "camera": {
+        "azimuth": 25,
+        "elevation": 19,
+        "distance": 5,
+        "lens": 40,
+        "target": [
+          -1.25,
+          0.4,
+          -0.35
+        ],
+        "dof": null
+      },
+      "cameraMobile": {
+        "azimuth": 15,
+        "elevation": 24,
+        "distance": 4.6,
+        "lens": 35,
+        "target": [
+          -0.15,
+          0,
+          0.2
+        ]
+      },
+      "filter": {},
+      "transition": {},
+      "action": null
+    },
+    {
+      "id": "ai-content",
+      "hidden": false,
+      "label": "AI CONTENT",
+      "title": "From Image to 3D",
+      "subtitle": "",
+      "body": "2D 이미지로 장면과 오브젝트의 형태를 먼저 정의하고,\n이미지를 기준으로 개별 3D 에셋을 제작했습니다.",
+      "keywords": [],
+      "layout": {
+        "align": "right",
+        "vertical": "bottom",
+        "maxWidth": 520
+      },
+      "media": {
+        "layout": "cards",
+        "items": [
+          {
+            "src": "presentation/tent_2d_reference.jpg",
+            "caption": "2D Reference"
+          },
+          {
+            "src": "presentation/tent_3d_generation.jpg",
+            "caption": "3D Generation"
+          },
+          {
+            "src": "presentation/tent_final_asset.jpg",
+            "caption": "Final Asset"
+          }
+        ]
+      },
+      "camera": {
+        "azimuth": 20,
+        "elevation": 16,
+        "distance": 5.4,
+        "lens": 40,
+        "target": [
+          -1.6,
+          0.5,
+          -0.95
+        ],
+        "dof": null
+      },
+      "cameraMobile": {
+        "azimuth": 20,
+        "elevation": 20,
+        "distance": 4.4,
+        "lens": 35,
+        "target": [
+          -1.2,
+          0,
+          -0.45
+        ]
+      },
+      "filter": {},
+      "transition": {},
+      "action": null
+    },
+    {
+      "id": "vibe-coding",
+      "hidden": false,
+      "label": "VIBE CODING",
+      "title": "From Static to Alive",
+      "subtitle": "",
+      "body": "생성된 장면을 그대로 쓰지 않고\n이동·애니메이션·날씨·조명·카메라 기능을 추가하고 다듬었습니다.",
+      "keywords": [
+        "Click to Walk",
+        "Rest by the Log",
+        "Dynamic Weather",
+        "Photo Mode"
+      ],
+      "layout": {
+        "align": "left",
+        "vertical": "top",
+        "maxWidth": 460
+      },
+      "media": {
+        "layout": "none",
+        "items": []
+      },
+      "camera": {
+        "azimuth": 58,
+        "elevation": 15,
+        "distance": 3.8,
+        "lens": 50,
+        "target": [
+          -0.3,
+          0.38,
+          -0.55
+        ],
+        "dof": null
+      },
+      "cameraMobile": {
+        "azimuth": 40,
+        "elevation": 18,
+        "distance": 3.6,
+        "lens": 35,
+        "target": [
+          0.25,
+          0,
+          -0.2
+        ]
+      },
+      "filter": {},
+      "transition": {},
+      "action": null
+    },
+    {
+      "id": "explore",
+      "hidden": false,
+      "label": "EXPLORE",
+      "title": "이제 직접 둘러보세요.",
+      "subtitle": "",
+      "body": "",
+      "keywords": [],
+      "layout": {
+        "align": "center",
+        "vertical": "bottom",
+        "maxWidth": 560
+      },
+      "media": {
+        "layout": "none",
+        "items": []
+      },
+      "camera": {
+        "azimuth": 17,
+        "elevation": 22,
+        "distance": 7.2,
+        "lens": 35,
+        "target": [
+          -0.1,
+          0.42,
+          -0.35
+        ],
+        "dof": null
+      },
+      "cameraMobile": {
+        "azimuth": 17,
+        "elevation": 24,
+        "distance": 7,
+        "lens": 35,
+        "target": [
+          -0.1,
+          0,
+          0.6
+        ]
+      },
+      "filter": {},
+      "transition": {},
+      "action": {
+        "type": "explore",
+        "label": "탐험하러 가기 →"
+      }
+    }
+  ],
+  "note": "인트로(Presentation Mode) 설정. 편집: 로컬 서버 /web/?edit → '인트로 편집' 탭. 직접 고쳐도 됨 (잘못된 값은 읽을 때 기본값으로, 저장은 거부). 안내: docs/PRESENTATION_EDITOR_GUIDE.md",
+  "saved_at": "2026-10-28T15:33:07.635Z",
+  "saved_by": "intro-editor"
+}

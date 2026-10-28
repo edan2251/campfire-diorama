@@ -25,6 +25,8 @@ import { loadCharacter, CHAR_LOOK } from './app/character.js';
 import { createCameraRig } from './app/camera_rig.js';
 import { createPanel } from './ui/panel.js';
 import { createHud } from './ui/hud.js';
+import { parsePresentation, defaultPresentation } from './logic/presentation_model.js';
+import { createPresentation } from './present/presentation.js';
 
 const $ = (id) => document.getElementById(id);
 const stage = $('stage');
@@ -71,6 +73,20 @@ try {
   const terrain = createTerrain(await getJSON('config/island_height.json'));   // 실제 섬 윗면 높이
   let firstView = null;
   try { firstView = await getJSON('config/first_view.json'); store.setCameraBase(firstView.camera); } catch { firstView = null; }   // 없으면 코드 기본 구도
+  // 인트로 설정 (web/config/presentation.json). 없거나 못 읽으면 인트로 없이 바로 탐험 (오류는 콘솔에만)
+  let presCfg = null;
+  try {
+    const r = parsePresentation(await (await fetch('config/presentation.json', { cache: 'no-store' })).text());
+    if (r.ok) presCfg = r.value; else console.warn('인트로 설정을 읽지 못해 인트로 없이 시작', r.errors);
+    if (r.warnings.length) console.info('인트로 설정: 일부 값을 기본값으로', r.warnings);
+  } catch (e) { console.warn('인트로 설정을 받지 못해 인트로 없이 시작', e); }
+  // 시작 시 인트로: 방문자 설정(설정 패널, 브라우저에 저장) > 파일 기본값(start.mode). ?intro=1 항상 / ?intro=0 건너뜀. 편집 모드는 자동 시작 안 함
+  const INTRO_PREF_KEY = 'camping.intro.start.v1', INTRO_SEEN_KEY = 'camping.intro.seen.v1';
+  const lsGet = (k) => { try { return storage?.getItem(k) ?? null; } catch { return null; } };
+  const lsSet = (k, v) => { try { if (v === null) storage?.removeItem(k); else storage?.setItem(k, v); } catch { /* 사생활 모드 등 — 이번 방문만 */ } };
+  const introStartMode = () => lsGet(INTRO_PREF_KEY) ?? presCfg?.start.mode ?? 'never';
+  const introParam = Q.get('intro');
+  const introAtStart = !!presCfg && !EDIT && (introParam === '1' || (introParam !== '0' && (introStartMode() === 'always' || (introStartMode() === 'first' && lsGet(INTRO_SEEN_KEY) !== '1'))));
   let rest = restFromLayout(L);
   let grid = buildNavGrid({ outline: outlineFromLayout(L), obstacles: obstaclesFromLayout(L) });
   const makeController = () => createController({ grid, rest, clips: { SitDown_Ground: clipInfo.clips.SitDown_Ground.seconds, StandUp_Ground: clipInfo.clips.StandUp_Ground.seconds }, speed: charInfo.walk_speed, initial: 'Seated' });
@@ -202,12 +218,14 @@ try {
     const { createEditor } = await import('./edit/editor.js');
     editor = createEditor($('editRoot'), L, {
       scene, camera, canvas: renderer.domElement, terrain, world: worldApi, characterRoot: character.root, store, rig, toast, firstView,
+      presentation: () => presentation, presentationConfig: presCfg,   // 인트로 편집 탭 (인트로 런타임은 아래에서 만듦)
       applyLayout, check,
       startTest(L2) { applyLayout(L2, { final: true }); ctrl = makeController(); testing = true; markerT = 0; return true; },   // 새 배치·착석 상태에서 시작 (이전 목표·대기 요청 없음)
       stopTest() { ctrl = makeController(); testing = false; },
     });
   }
-  const mode = () => (store.photo.active ? 'photo' : editor && !testing ? 'edit' : 'view');
+  let presentation = null;                 // 아래에서 만듦 (인트로 중에는 'present' — 캐릭터·카메라·촬영 입력 없음)
+  const mode = () => (presentation?.blocking ? 'present' : store.photo.active ? 'photo' : editor && !testing ? 'edit' : 'view');
   const charCtrl = () => (editor && !testing ? preview : ctrl);
 
   // ---------- 입력 ----------
@@ -369,9 +387,11 @@ try {
   }
 
   // ---------- 그리기 ----------
-  function focusDistance() {
-    const f = S.camera.focus;
+  /** 초점 거리. modeOverride: 인트로 섹션 심도의 초점('character' | 'fire' | 'target') */
+  function focusDistance(modeOverride) {
+    const f = modeOverride ? { mode: modeOverride } : S.camera.focus;
     if (f.mode === 'manual') return (f.distanceM * 1000) / H_MM;           // 가상 m → H
+    if (f.mode === 'target') return Math.max(0.05, camera.position.distanceTo(rig.current.target));
     const p = f.mode === 'fire' ? new THREE.Vector3(firePos.x, firePos.y + 0.3, firePos.z)
       : f.mode === 'point' ? new THREE.Vector3(...f.point)
         : character.headBone ? character.headBone.getWorldPosition(new THREE.Vector3()) : new THREE.Vector3(rest.approach[0], 0.5, rest.approach[1]);
@@ -380,8 +400,14 @@ try {
   }
   function draw(t) {
     if (rain.group.visible || wetLook.hasWet(wetness.values)) rain.renderOcclusion(renderer, scene);   // 그친 뒤에도 마를 때까지 (움직인 캐릭터·옮긴 소품 기준)
-    const dof = S.camera.dof.on && !S.quality.effectsOff.dof ? { on: true, focus: focusDistance(), fstop: S.camera.dof.fstop, maxBlur: S.camera.dof.maxBlur } : null;
-    post.render(scene, camera, { dof, screen: S.screen, time: t, ao: !S.quality.effectsOff.ao });
+    // 인트로: 섹션 카메라의 심도(있으면)·블룸 조절·전시 필터와 빗물 씻김. 탐험에서는 present가 null → 필터 단계 없음
+    const pdof = presentation?.dof();
+    const dof = pdof && !S.quality.effectsOff.dof ? { on: true, focus: focusDistance(pdof.focus), fstop: pdof.fstop, maxBlur: pdof.maxBlur }
+      : presentation?.blocking ? null
+        : S.camera.dof.on && !S.quality.effectsOff.dof ? { on: true, focus: focusDistance(), fstop: S.camera.dof.fstop, maxBlur: S.camera.dof.maxBlur } : null;
+    const present = presentation?.renderState() ?? null;
+    const screen = present ? presentation.screen(S.screen) : S.screen;
+    post.render(scene, camera, { dof, screen, time: t, ao: !S.quality.effectsOff.ao, present });
   }
   async function savePNG() {
     editor?.setHelpersHidden(true);                                      // 편집 표시·선택 강조는 PNG에서 뺌 (DOM UI는 캔버스 밖이라 원래 제외)
@@ -404,7 +430,7 @@ try {
   let lastInset = '';
   function fitToSheet() {
     const p = document.querySelector('#ui .panel');
-    const hidden = document.body.classList.contains('ui-hidden');
+    const hidden = document.body.classList.contains('ui-hidden') || !!presentation?.active;   // 인트로·인트로 미리보기: 실제 인트로와 같은 구도(중심 이동 없음)
     const mobile = innerWidth < 700;
     const insetY = mobile && p && !hidden ? Math.round(p.offsetHeight / 2) : 0;
     const open = document.getElementById('ui').classList.contains('open');
@@ -438,7 +464,43 @@ try {
     },
   });
   setInterval(() => panel.refresh(), 500);
-  const hud = createHud($('ui'), store, { savePNG, setUIHidden, storage, autoHelp: !EDIT });
+  const hud = createHud($('ui'), store, { savePNG, setUIHidden, storage, autoHelp: !EDIT && !introAtStart, replayIntro: presCfg && !EDIT ? () => replayIntro() : null });
+
+  // ---------- 인트로 (Presentation Mode) ----------
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  if (presCfg || EDIT) {                                                 // 편집 모드는 파일이 없어도 새로 만들 수 있게
+    presentation = createPresentation($('present'), presCfg ?? defaultPresentation(), {
+      rig,
+      isPortrait: () => innerWidth / Math.max(1, innerHeight) < 0.8,
+      reducedMotion: () => reducedMotion.matches,
+      onEscape: () => !!editor?.introEscape(),                           // 편집기에서 재생 중이면 Esc = 편집으로
+      // 인트로로 들어올 때: 촬영 모드·UI 숨김·도움말·설정 패널을 정리 (날씨·오로라·불·화면 설정은 그대로)
+      onPresent() {
+        if (store.photo.active) store.exitPhoto();
+        setUIHidden(false);
+        hud.closeHelp?.();
+        panel.setOpen(false);
+        document.body.classList.remove('explore-enter');
+      },
+      // 탐험으로: 마지막 인트로 카메라를 감상 카메라로 넘김(저장하지 않음) → HUD가 부드럽게 나타남
+      onExplore(cam) {
+        if (editor) { editor.introPlayDone?.(); return; }          // 편집기에서 재생한 경우: 편집기로 돌아감
+        for (const k of ['azimuth', 'elevation', 'distance', 'lens', 'target']) store.set(`camera.${k}`, cam[k], { save: false });
+        lsSet(INTRO_SEEN_KEY, '1');
+        document.body.classList.add('explore-enter');
+        setTimeout(() => document.body.classList.remove('explore-enter'), 900);
+        hud.maybeAutoHelp?.();
+      },
+    });
+    if (introAtStart) presentation.start(0, { instant: true });   // 첫 프레임부터 인트로 첫 장 구도
+  }
+  function replayIntro() { presentation?.start(0); }
+  panel.setIntroHooks?.({
+    get mode() { return lsGet(INTRO_PREF_KEY); },
+    fileDefault: presCfg?.start.mode ?? 'never',
+    set(v) { lsSet(INTRO_PREF_KEY, v); },
+    replay: presCfg && !EDIT ? replayIntro : null,
+  });
 
   // ---------- 루프 ----------
   let last = performance.now();
@@ -477,6 +539,7 @@ try {
     const link = S.scene.weatherLink ? rainState.level : 0;               // 날씨와 하늘 연동: 비가 오면 별·오로라가 가려짐 (선택값은 그대로)
     sky.update(t, { starIntensity: S.scene.stars.intensity * (1 - 0.7 * link), twinkle: S.scene.stars.twinkle, auroraLevel: S.quality.effectsOff.aurora ? 0 : runtime.auroraLevel * (1 - 0.85 * link), auroraIntensity: S.scene.aurora.intensity, auroraSpeed: S.scene.aurora.speed });
     rain.update(t, { level: rainState.level, intensity: S.scene.rain.intensity, wind, fire: { pos: new THREE.Vector3(firePos.x, firePos.y + 0.3, firePos.z), actual: runtime.fireActual } });
+    presentation?.update(realDt);                                         // 인트로 카메라(덮어쓰기)·필터·씻김 진행
     rig.update(realDt);
     if (camera.fov !== lastFov) { lastFov = camera.fov; resize(); }          // 렌즈(화각)가 바뀌면 불티·빗방울 점 크기 기준도 다시
     fitToSheet();
@@ -488,7 +551,7 @@ try {
     if (!window.__camp.firstFrameMs) window.__camp.firstFrameMs = Math.round(performance.now());   // 탐색 시작 → 첫 프레임 (로딩 시간)
     if (DEBUG) $('debug').textContent = `${mode()} · ${cc.state} ${character.clip} · pending ${ctrl.pending ? ctrl.pending.type : '-'} · 불 ${runtime.fireActual.toFixed(2)} · 비 ${rainState.phase} · ${QNAME[quality]} · ${(realMs).toFixed(1)}ms`;
   }
-  window.__camp = { THREE, renderer, scene, camera, store, character, rig, rainState, fireW, runtime, clock, post, fire, sky, rain, panel, hud, governor, editor, firePos, logHit,
+  window.__camp = { THREE, renderer, scene, camera, store, character, rig, rainState, fireW, runtime, clock, post, fire, sky, rain, panel, hud, presentation, governor, editor, firePos, logHit,
     get ctrl() { return ctrl; }, get grid() { return grid; }, get rest() { return rest; }, get L() { return L; }, get mode() { return mode(); }, get testing() { return testing; },
     get quality() { return quality; }, CHAR_LOOK, pick, onTap, draw, savePNG, terrain, world, worldApi, usingProps, failed, wetness, wetLook, applyLayout, check,
     tapAt(x, y) { const req = pick(x, y); return req ? ctrl.request(req) : null; },
